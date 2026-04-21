@@ -11,7 +11,7 @@
     "db:seed:remote": "wrangler d1 execute DB --remote --file=./scripts/seed.sql -y",
     "verify:payments": "bun run scripts/verify-payment-adapters.ts",
     "verify:payment-notify": "bun run scripts/verify-payment-notify.ts",
-    "deploy": "bun run db:migrations:apply && bun run db:seed:remote && bun run up",
+    "deploy": "bun run db:migrations:apply && bun run db:seed:remote && wrangler deploy",
     "up": "vike build && wrangler deploy",
     "types": "wrangler types"
   },

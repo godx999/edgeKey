@@ -1,31 +1,32 @@
--- enums are represented as TEXT columns in SQLite / D1
-
+-- CreateTable
 CREATE TABLE "Admin" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "username" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "nickname" TEXT,
+    "email" TEXT,
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "updatedAt" DATETIME NOT NULL
 );
 
-CREATE UNIQUE INDEX "Admin_username_key" ON "Admin"("username");
-
+-- CreateTable
 CREATE TABLE "SiteSetting" (
-    "id" INTEGER NOT NULL PRIMARY KEY DEFAULT 1,
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
     "siteName" TEXT NOT NULL,
     "siteUrl" TEXT,
     "siteSubtitle" TEXT,
+    "logoIcon" TEXT,
     "logo" TEXT,
     "notice" TEXT,
     "supportContact" TEXT,
     "footerText" TEXT,
     "orderNotice" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "updatedAt" DATETIME NOT NULL
 );
 
+-- CreateTable
 CREATE TABLE "Category" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "name" TEXT NOT NULL,
@@ -34,11 +35,10 @@ CREATE TABLE "Category" (
     "sort" INTEGER NOT NULL DEFAULT 0,
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "updatedAt" DATETIME NOT NULL
 );
 
-CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
-
+-- CreateTable
 CREATE TABLE "Product" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "categoryId" INTEGER,
@@ -58,14 +58,26 @@ CREATE TABLE "Product" (
     "isContactRequired" BOOLEAN NOT NULL DEFAULT true,
     "purchaseNote" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "Product_slug_key" ON "Product"("slug");
-CREATE INDEX "Product_categoryId_idx" ON "Product"("categoryId");
-CREATE INDEX "Product_status_sort_idx" ON "Product"("status", "sort");
+-- CreateTable
+CREATE TABLE "Card" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "productId" INTEGER NOT NULL,
+    "content" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'UNUSED',
+    "batchNo" TEXT,
+    "orderId" INTEGER,
+    "soldAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Card_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Card_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
 
+-- CreateTable
 CREATE TABLE "Order" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "orderNo" TEXT NOT NULL,
@@ -88,33 +100,11 @@ CREATE TABLE "Order" (
     "deliveredAt" DATETIME,
     "closedAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Order_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-CREATE UNIQUE INDEX "Order_orderNo_key" ON "Order"("orderNo");
-CREATE INDEX "Order_productId_idx" ON "Order"("productId");
-CREATE INDEX "Order_status_createdAt_idx" ON "Order"("status", "createdAt");
-CREATE INDEX "Order_paymentStatus_createdAt_idx" ON "Order"("paymentStatus", "createdAt");
-CREATE INDEX "Order_deliveryStatus_createdAt_idx" ON "Order"("deliveryStatus", "createdAt");
-
-CREATE TABLE "Card" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "productId" INTEGER NOT NULL,
-    "content" TEXT NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'UNUSED',
-    "batchNo" TEXT,
-    "orderId" INTEGER,
-    "soldAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Card_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Card_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-
-CREATE INDEX "Card_productId_status_idx" ON "Card"("productId", "status");
-CREATE INDEX "Card_orderId_idx" ON "Card"("orderId");
-
+-- CreateTable
 CREATE TABLE "OrderDelivery" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "orderId" INTEGER NOT NULL,
@@ -125,8 +115,7 @@ CREATE TABLE "OrderDelivery" (
     CONSTRAINT "OrderDelivery_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-CREATE INDEX "OrderDelivery_orderId_createdAt_idx" ON "OrderDelivery"("orderId", "createdAt");
-
+-- CreateTable
 CREATE TABLE "PaymentConfig" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "provider" TEXT NOT NULL,
@@ -134,11 +123,10 @@ CREATE TABLE "PaymentConfig" (
     "isEnabled" BOOLEAN NOT NULL DEFAULT false,
     "configJson" TEXT NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "updatedAt" DATETIME NOT NULL
 );
 
-CREATE UNIQUE INDEX "PaymentConfig_provider_key" ON "PaymentConfig"("provider");
-
+-- CreateTable
 CREATE TABLE "PaymentLog" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "orderId" INTEGER,
@@ -153,10 +141,47 @@ CREATE TABLE "PaymentLog" (
     CONSTRAINT "PaymentLog_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE INDEX "PaymentLog_provider_createdAt_idx" ON "PaymentLog"("provider", "createdAt");
-CREATE INDEX "PaymentLog_orderNo_idx" ON "PaymentLog"("orderNo");
-CREATE INDEX "PaymentLog_orderId_idx" ON "PaymentLog"("orderId");
+-- CreateTable
+CREATE TABLE "EmailConfig" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "provider" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "configJson" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
 
+-- CreateTable
+CREATE TABLE "EmailTemplate" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "scene" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "subject" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "isEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "EmailLog" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "orderId" INTEGER,
+    "provider" TEXT NOT NULL,
+    "apiProvider" TEXT,
+    "scene" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'SUCCESS',
+    "toEmail" TEXT NOT NULL,
+    "subject" TEXT NOT NULL,
+    "messageId" TEXT,
+    "error" TEXT,
+    "triggeredBy" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "EmailLog_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "AdminOperationLog" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "adminId" INTEGER NOT NULL,
@@ -168,7 +193,75 @@ CREATE TABLE "AdminOperationLog" (
     CONSTRAINT "AdminOperationLog_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "Admin" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Admin_username_key" ON "Admin"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Product_slug_key" ON "Product"("slug");
+
+-- CreateIndex
+CREATE INDEX "Product_categoryId_idx" ON "Product"("categoryId");
+
+-- CreateIndex
+CREATE INDEX "Product_status_sort_idx" ON "Product"("status", "sort");
+
+-- CreateIndex
+CREATE INDEX "Card_productId_status_idx" ON "Card"("productId", "status");
+
+-- CreateIndex
+CREATE INDEX "Card_orderId_idx" ON "Card"("orderId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Order_orderNo_key" ON "Order"("orderNo");
+
+-- CreateIndex
+CREATE INDEX "Order_productId_idx" ON "Order"("productId");
+
+-- CreateIndex
+CREATE INDEX "Order_status_createdAt_idx" ON "Order"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Order_paymentStatus_createdAt_idx" ON "Order"("paymentStatus", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Order_deliveryStatus_createdAt_idx" ON "Order"("deliveryStatus", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "OrderDelivery_orderId_createdAt_idx" ON "OrderDelivery"("orderId", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PaymentConfig_provider_key" ON "PaymentConfig"("provider");
+
+-- CreateIndex
+CREATE INDEX "PaymentLog_provider_createdAt_idx" ON "PaymentLog"("provider", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "PaymentLog_orderNo_idx" ON "PaymentLog"("orderNo");
+
+-- CreateIndex
+CREATE INDEX "PaymentLog_orderId_idx" ON "PaymentLog"("orderId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmailConfig_provider_key" ON "EmailConfig"("provider");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmailTemplate_scene_key" ON "EmailTemplate"("scene");
+
+-- CreateIndex
+CREATE INDEX "EmailLog_provider_createdAt_idx" ON "EmailLog"("provider", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "EmailLog_scene_createdAt_idx" ON "EmailLog"("scene", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "EmailLog_status_createdAt_idx" ON "EmailLog"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "EmailLog_orderId_idx" ON "EmailLog"("orderId");
+
+-- CreateIndex
 CREATE INDEX "AdminOperationLog_adminId_createdAt_idx" ON "AdminOperationLog"("adminId", "createdAt");
 
-INSERT INTO "SiteSetting" ("id", "siteName", "siteSubtitle", "notice")
-VALUES (1, 'EK发卡商城', 'Cloudflare Workers 免费部署自动发卡商城', '全球部署，一触即达。');

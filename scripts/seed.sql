@@ -5,6 +5,10 @@ ON CONFLICT("username") DO UPDATE SET
   "nickname" = excluded."nickname",
   "status" = excluded."status";
 
+INSERT INTO "SiteSetting" ("id", "siteName", "siteSubtitle", "notice")
+VALUES (1, 'EK发卡商城', 'Cloudflare Workers 免费部署自动发卡商城', '全球部署，一触即达。')
+ON CONFLICT("id") DO NOTHING;
+
 INSERT INTO "EmailTemplate" ("scene", "name", "subject", "content", "isEnabled")
 VALUES
   ('TEST', '测试邮件', '[{{siteName}}] 测试邮件', '这是一封测试邮件。
