@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "vike dev",
-    "build": "vike build",
+    "build": "bun run db:generate && vike build",
     "preview": "vike build && vike preview",
     "db:d1": "bunx wrangler d1 execute DB",
     "db:seed": "bunx wrangler d1 execute DB --local --file=./scripts/seed.sql -y",
