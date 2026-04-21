@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* 1. 自定义亮色模式（默认主题） */
+@plugin "daisyui/theme" {
+  name: "light";
+  default: true;
+  /* 在这里修改你的品牌主色调，支持直接写颜色名、Hex(#xxx) 或 oklch() */
+  --color-primary: oklch(45% 0.25 270); /* 当前默认是一个偏蓝紫色的主色 */
+  /* --color-secondary: oklch(70% 0.25 200); */
+}
+
+/* 2. 自定义暗色模式（跟随系统暗黑） */
+@plugin "daisyui/theme" {
+  name: "dark";
+  prefersdark: true;
+  /* 暗黑模式下的主色调可以稍微提亮一点，保证在深色背景上的可读性 */
+  --color-primary: oklch(65% 0.2 270);
+}
+
+@layer base {
+  h1 {
+    @apply mb-4 text-4xl font-bold tracking-tight text-base-content;
+  }
+  ul {
+    @apply list-disc pl-6;
+  }
+  ol {
+    @apply list-decimal pl-6;
+  }
+  p {
+    @apply mb-2 mt-2;
+  }
+  a {
+    @apply text-primary hover:text-primary/80 transition-colors;
+  }
+}

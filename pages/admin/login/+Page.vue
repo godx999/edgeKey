@@ -1,0 +1,51 @@
+<template>
+  <div class="flex min-h-screen items-center justify-center bg-base-200 px-4">
+    <section class="card w-full max-w-md bg-base-100 shadow-sm">
+      <div class="card-body space-y-4">
+        <div>
+          <p class="text-sm uppercase tracking-[0.2em] text-primary">Auth.js Admin</p>
+          <h1 class="text-2xl font-bold">后台登录</h1>
+        </div>
+        <p class="text-sm text-base-content/70">
+          使用管理员账号登录后台，进行商品、库存、订单和支付配置管理。
+        </p>
+        <form class="space-y-4" method="post" action="/api/auth/callback/credentials?callbackUrl=/admin">
+          <input type="hidden" name="csrfToken" :value="csrfToken" />
+          <label class="flex flex-col gap-1.5">
+            <span class="label-text font-medium">用户名</span>
+            <input name="username" class="input input-bordered w-full" placeholder="admin" required />
+          </label>
+          <label class="flex flex-col gap-1.5">
+            <span class="label-text font-medium">密码</span>
+            <input name="password" type="password" class="input input-bordered w-full" placeholder="请输入密码" required />
+          </label>
+          <button class="btn btn-primary w-full" type="submit" :disabled="loading || !csrfToken">
+            {{ loading ? "初始化登录中..." : "登录后台" }}
+          </button>
+        </form>
+        <div class="rounded-box bg-base-200 p-3 text-xs text-base-content/70">
+          首次初始化完成后，请立即前往“个人资料”修改管理员密码。
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+
+const csrfToken = ref("");
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const response = await fetch("/api/auth/csrf", {
+      credentials: "same-origin",
+    });
+    const data = (await response.json()) as { csrfToken?: string };
+    csrfToken.value = data.csrfToken ?? "";
+  } finally {
+    loading.value = false;
+  }
+});
+</script>
