@@ -11,7 +11,8 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "edgekey-db"
+			"database_name": "edgekey-db",
+			"migrations_dir": "prisma/migrations"
 		}
 	]
 }
