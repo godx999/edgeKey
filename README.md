@@ -2,6 +2,25 @@
 
 EdgeKey 是一套有vike框架开发，可直接部署到 Cloudflare 的一体化全栈卡密商城系统：同一套代码同时包含前端页面、SSR 渲染、后端 API / 数据变更入口，并由 Cloudflare Workers 运行。
 
+## 一键部署到 Cloudflare Workers
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/34892002/edgeKey)
+
+首次部署后还需要初始化线上 D1（只需执行一次）与配置 `AUTH_SECRET`（否则应用会拒绝启动）：
+
+```powershell
+bunx wrangler login
+
+# 按文件名顺序执行所有迁移（使用 DB 绑定名，避免数据库名称不同导致失败）
+Get-ChildItem ./prisma/migrations/*.sql | Sort-Object Name | ForEach-Object { bunx wrangler d1 execute DB --remote --file=$_.FullName }
+
+# 初始化管理员账号与种子数据（可重复执行）
+bunx wrangler d1 execute DB --remote --file="./scripts/seed.sql"
+
+# 配置 AUTH_SECRET
+bunx wrangler secret put AUTH_SECRET
+```
+
 ## 技术栈
 
 - 框架与渲染
