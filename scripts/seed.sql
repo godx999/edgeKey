@@ -45,4 +45,3 @@ VALUES
 查询地址：{{queryUrl}}
 {{supportContact}}', true, CURRENT_TIMESTAMP)
 ON CONFLICT("scene") DO NOTHING;
-
