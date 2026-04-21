@@ -6,8 +6,8 @@ ON CONFLICT("username") DO UPDATE SET
   "status" = excluded."status",
   "updatedAt" = CURRENT_TIMESTAMP;
 
-INSERT INTO "SiteSetting" ("id", "siteName", "siteSubtitle", "notice")
-VALUES (1, 'EK发卡商城', 'Cloudflare Workers 免费部署自动发卡商城', '全球部署，一触即达。')
+INSERT INTO "SiteSetting" ("id", "siteName", "siteSubtitle", "notice", "updatedAt")
+VALUES (1, 'EK发卡商城', 'Cloudflare Workers 免费部署自动发卡商城', '全球部署，一触即达。', CURRENT_TIMESTAMP)
 ON CONFLICT("id") DO NOTHING;
 
 INSERT INTO "EmailTemplate" ("scene", "name", "subject", "content", "isEnabled", "updatedAt")
