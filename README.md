@@ -1,6 +1,6 @@
 # EdgeKey
 
-EdgeKey 是一套可直接部署到 Cloudflare 的一体化全栈卡密商城系统：同一套代码同时包含前端页面、SSR 渲染、后端 API / 数据变更入口，并由 Cloudflare Workers 运行（通过 Wrangler 部署）。
+EdgeKey 是一套有vike框架开发，可直接部署到 Cloudflare 的一体化全栈卡密商城系统：同一套代码同时包含前端页面、SSR 渲染、后端 API / 数据变更入口，并由 Cloudflare Workers 运行。
 
 ## 技术栈
 
@@ -50,10 +50,7 @@ EdgeKey 是一套可直接部署到 Cloudflare 的一体化全栈卡密商城系
 │  ├─ schema.prisma
 │  └─ migrations/
 │     ├─ 0001_init.sql
-│     ├─ 0002_add_site_url.sql
-│     ├─ 0003_add_email_management.sql
-│     ├─ 0004_add_admin_email.sql
-│     └─ 0008_add_site_logo_icon.sql
+│     └─ 0002_xxx.sql
 ├─ vite.config.ts          # Vite 插件配置（vike + vue + tailwind + telefunc）
 ├─ wrangler.jsonc          # Cloudflare Workers 配置（入口为 Photon 虚拟模块）
 └─ package.json            # 脚本与依赖
@@ -86,19 +83,23 @@ bunx prisma generate
 
 # 2. 按顺序将所有迁移脚本应用到本地 Wrangler 模拟器
 bunx wrangler d1 execute edgekey-db --local --file="./prisma/migrations/0001_init.sql"
-bunx wrangler d1 execute edgekey-db --local --file="./prisma/migrations/0002_add_site_url.sql"
-bunx wrangler d1 execute edgekey-db --local --file="./prisma/migrations/0003_add_email_management.sql"
-bunx wrangler d1 execute edgekey-db --local --file="./prisma/migrations/0004_add_admin_email.sql"
-bunx wrangler d1 execute edgekey-db --local --file="./prisma/migrations/0008_add_site_logo_icon.sql"
+# 2.1 在版本更新过程中，可能会有新的数据库结构调整。
+# 如果目录存在新的迁移脚本，需要按照序号手动执行，本地开发D1数据库使用 --local 参数。
+bunx wrangler d1 execute edgekey-db --local --file="./prisma/migrations/0002_xxx.sql"
+bunx wrangler d1 execute edgekey-db --local --file="./prisma/migrations/0003_xxx.sql"
 
-# 3. 初始化管理员账号与邮件模板种子数据
+# 3. 初始化管理员账号与初始化种子数据
 bun run db:seed
 
-# 4. 启动开发服务器
+# 4. 准备.env 文件
+# 请在 `env.example` 中填写必要的环境变量，例如 `AUTH_SECRET`。
+# 然后复制 `env.example` 到 `env` 文件。
+
+# 5. 启动开发服务器
 bun run dev
 ```
 
-## 构建与部署（Cloudflare）
+## 构建与部署（手动）
 
 首次部署到 Cloudflare 前，需要先在云端创建并初始化 D1 数据库：
 
@@ -114,19 +115,17 @@ bun run dev
 3. **按顺序初始化云端表结构**
    ```bash
    bunx wrangler d1 execute edgekey-db --remote --file="./prisma/migrations/0001_init.sql"
-   bunx wrangler d1 execute edgekey-db --remote --file="./prisma/migrations/0002_add_site_url.sql"
-   bunx wrangler d1 execute edgekey-db --remote --file="./prisma/migrations/0003_add_email_management.sql"
-   bunx wrangler d1 execute edgekey-db --remote --file="./prisma/migrations/0004_add_admin_email.sql"
-   bunx wrangler d1 execute edgekey-db --remote --file="./prisma/migrations/0008_add_site_logo_icon.sql"
+   bunx wrangler d1 execute edgekey-db --remote --file="./prisma/migrations/0002_xxx.sql"
    ```
 
-4. **初始化管理员账号与邮件模板种子数据**
+4. **初始化管理员账号与初始化种子数据**
    ```bash
    bunx wrangler d1 execute edgekey-db --remote --file="./scripts/seed.sql"
    ```
    初始化后默认管理员账号为 `admin / admin123456`，首次登录后请立即修改密码。
 
 5. **配置 AUTH_SECRET**
+  输入命令执行，根据命令行提示输入你要使用的密钥字符串。
    ```bash
    bunx wrangler secret put AUTH_SECRET
    ```
@@ -175,17 +174,17 @@ bun run dev
 bunx prisma migrate diff \
   --from-local-d1 \
   --to-schema prisma/schema.prisma \
-  --script > prisma/migrations/0009_xxx.sql
+  --script > prisma/migrations/0002_xxx.sql
 ```
 
 说明：
 - `0001_init.sql` 只用于第一次初始化，不应在后续迁移中反复覆盖。
-- 后续迁移请按顺序新增文件，例如 `0009_add_foo.sql`、`0010_add_bar.sql`。
+- 后续迁移请按顺序新增文件，例如 `0002_add_foo.sql`、`0003_add_bar.sql`。
 
 **第二步：将迁移同步到本地 D1 模拟器（用于本地开发/测试）**
 
 ```bash
-bun run db:d1 -- --local --file=./prisma/migrations/0009_xxx.sql
+bun run db:d1 -- --local --file=./prisma/migrations/0002_xxx.sql
 ```
 
 如果不执行这一步，运行 `bun dev` 访问页面时会报错 `no such table`。
@@ -193,7 +192,7 @@ bun run db:d1 -- --local --file=./prisma/migrations/0009_xxx.sql
 **第三步：将迁移同步到 Cloudflare 线上（发布前）**
 
 ```bash
-bun run db:d1 -- --remote --file=./prisma/migrations/0009_xxx.sql
+bun run db:d1 -- --remote --file=./prisma/migrations/0002_xxx.sql
 ```
 
 将文件名替换成对应的增量迁移 SQL 文件即可。本地和线上需要分别执行一次。
