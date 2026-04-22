@@ -245,7 +245,7 @@ CREATE INDEX "PaymentLog_orderNo_idx" ON "PaymentLog"("orderNo");
 CREATE INDEX "PaymentLog_orderId_idx" ON "PaymentLog"("orderId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "EmailConfig_provider_key" ON "EmailConfig"("provider");
+CREATE INDEX "EmailConfig_provider_idx" ON "EmailConfig"("provider");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EmailTemplate_scene_key" ON "EmailTemplate"("scene");

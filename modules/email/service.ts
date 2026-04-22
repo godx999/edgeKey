@@ -6,15 +6,37 @@ import { validateEmailConfigInput, validateEmailTemplateInput, validateTestEmail
 import { getAdminContext, logAdminOperation } from "../auth/service";
 import { getSiteSetting } from "../site/service";
 import { createApiEmailAdapter } from "./provider";
-import { createEmailLogRecord, getEmailConfigRecord, listEmailConfigRecords, listEmailLogRecords, listEmailTemplateRecords, upsertEmailConfigRecord, upsertEmailTemplateRecord } from "./repository";
-import type { EmailApiConfigValue, EmailChannel, EmailCloudflareConfigValue, EmailConfigValue, EmailLogItem, EmailOverviewMetric, EmailScene, EmailSmtpConfigValue, EmailTemplateValue } from "./types";
+import {
+  activateEmailConfigById,
+  createEmailConfigRecord,
+  createEmailLogRecord,
+  deleteEmailConfigRecord,
+  getActiveEmailConfigRecord,
+  getEmailConfigRecordById,
+  listEmailConfigRecords,
+  listEmailLogRecords,
+  listEmailTemplateRecords,
+  updateEmailConfigRecord,
+  updatePushFlagsForAllConfigs,
+  upsertEmailTemplateRecord,
+} from "./repository";
+import type {
+  EmailApiConfigValue,
+  EmailChannel,
+  EmailCloudflareConfigValue,
+  EmailConfigValue,
+  EmailLogItem,
+  EmailOverviewMetric,
+  EmailScene,
+  EmailSmtpConfigValue,
+  EmailTemplateValue,
+} from "./types";
 
 type EmailConfigRecord = Awaited<ReturnType<typeof listEmailConfigRecords>>[number];
 type EmailTemplateRecord = Awaited<ReturnType<typeof listEmailTemplateRecords>>[number];
 type EmailLogRecord = Awaited<ReturnType<typeof listEmailLogRecords>>[number];
 
 const emailScenes = ["TEST", "ORDER_PAID", "DELIVERY_SUCCESS", "DELIVERY_FAILED"] as const;
-const emailChannels = ["API", "SMTP", "CLOUDFLARE"] as const;
 
 function getChannelDisplayName(channel: EmailChannel) {
   return channel === "API" ? "API" : channel === "SMTP" ? "SMTP" : "CloudFlare";
@@ -105,28 +127,30 @@ function getEmailContext() {
 }
 
 function getDefaultConfig(provider: EmailChannel): EmailConfigValue {
-  if (provider === "API") return defaultApiConfig;
-  if (provider === "SMTP") return defaultSmtpConfig;
-  return defaultCloudflareConfig;
+  if (provider === "API") return { ...defaultApiConfig };
+  if (provider === "SMTP") return { ...defaultSmtpConfig };
+  return { ...defaultCloudflareConfig };
 }
 
-function normalizeEmailConfig(record: Awaited<ReturnType<typeof getEmailConfigRecord>>, provider: EmailChannel): EmailConfigValue {
+function normalizeEmailConfigFromRecord(record: EmailConfigRecord): EmailConfigValue {
+  const provider = record.provider as EmailChannel;
   const defaults = getDefaultConfig(provider);
-  if (!record) {
-    return defaults;
-  }
 
   try {
     const parsed = JSON.parse(record.configJson) as Partial<EmailConfigValue>;
     return {
       ...defaults,
       ...parsed,
+      id: record.id,
+      name: record.name,
       provider,
       isEnabled: record.isEnabled,
     } as EmailConfigValue;
   } catch {
     return {
       ...defaults,
+      id: record.id,
+      name: record.name,
       isEnabled: record.isEnabled,
     } as EmailConfigValue;
   }
@@ -198,14 +222,13 @@ async function createLog(prisma: PrismaClient, input: {
   });
 }
 
-async function getActiveEmailConfig(prisma: PrismaClient) {
-  const records = await listEmailConfigRecords(prisma);
-  const activeRecord = records.find((record: EmailConfigRecord) => record.isEnabled);
-  if (!activeRecord) {
-    throw badRequestError("请先启用一个邮件发送分类", "EMAIL_CHANNEL_NOT_ENABLED");
+async function getActiveEmailConfig(prisma: PrismaClient): Promise<EmailConfigValue> {
+  const record = await getActiveEmailConfigRecord(prisma);
+  if (!record) {
+    throw badRequestError("请先启用一个邮局配置", "EMAIL_CHANNEL_NOT_ENABLED");
   }
 
-  return normalizeEmailConfig(activeRecord, activeRecord.provider as EmailChannel);
+  return normalizeEmailConfigFromRecord(record);
 }
 
 async function getEmailBaseValues(prisma: PrismaClient) {
@@ -259,8 +282,9 @@ async function sendSceneEmail(prisma: PrismaClient, input: {
   values: Record<string, string>;
   orderId?: number;
   triggeredBy?: string;
+  config?: EmailConfigValue;
 }) {
-  const config = await getActiveEmailConfig(prisma);
+  const config = input.config ?? await getActiveEmailConfig(prisma);
   const templates = await listEmailTemplateRecords(prisma);
   const template = normalizeEmailTemplate(templates.find((item: EmailTemplateRecord) => item.scene === input.scene), input.scene);
 
@@ -321,6 +345,10 @@ async function sendSceneEmail(prisma: PrismaClient, input: {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Public API: management data
+// ---------------------------------------------------------------------------
+
 export async function getEmailManagementData(prisma?: PrismaClient) {
   const client = prisma ?? getEmailContext().prisma;
   const [configRecords, templateRecords, logRecords] = await Promise.all([
@@ -329,11 +357,16 @@ export async function getEmailManagementData(prisma?: PrismaClient) {
     listEmailLogRecords(client, 100),
   ]);
 
-  const configs = Object.fromEntries(
-    emailChannels.map((provider) => [provider, normalizeEmailConfig(configRecords.find((item: EmailConfigRecord) => item.provider === provider) ?? null, provider)]),
-  ) as Record<EmailChannel, EmailConfigValue>;
+  const configs: EmailConfigValue[] = configRecords.map((record: EmailConfigRecord) =>
+    normalizeEmailConfigFromRecord(record),
+  );
 
-  const templates = emailScenes.map((scene) => normalizeEmailTemplate(templateRecords.find((item: EmailTemplateRecord) => item.scene === scene), scene));
+  const templates = emailScenes.map((scene) =>
+    normalizeEmailTemplate(
+      templateRecords.find((item: EmailTemplateRecord) => item.scene === scene),
+      scene,
+    ),
+  );
 
   const statsMap = {
     total: logRecords.length,
@@ -363,13 +396,29 @@ export async function getEmailManagementData(prisma?: PrismaClient) {
     createdAt: item.createdAt.toISOString(),
   }));
 
+  // Derive current push settings from the first config (they're synced across all)
+  const firstConfig = configs[0] ?? defaultApiConfig;
+  const pushSettings = {
+    customerSendOrderPaidEmail: firstConfig.customerSendOrderPaidEmail,
+    customerSendDeliverySuccessEmail: firstConfig.customerSendDeliverySuccessEmail,
+    customerSendDeliveryFailedEmail: firstConfig.customerSendDeliveryFailedEmail,
+    adminSendOrderPaidEmail: firstConfig.adminSendOrderPaidEmail,
+    adminSendDeliverySuccessEmail: firstConfig.adminSendDeliverySuccessEmail,
+    adminSendDeliveryFailedEmail: firstConfig.adminSendDeliveryFailedEmail,
+  };
+
   return {
     configs,
     templates,
     logs,
     metrics,
+    pushSettings,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Public API: save push settings
+// ---------------------------------------------------------------------------
 
 export async function saveEmailPushSettings(input: {
   customerSendOrderPaidEmail: boolean;
@@ -383,27 +432,14 @@ export async function saveEmailPushSettings(input: {
   const { prisma } = adminContext;
   const adminId = Number(adminContext.session?.user?.id);
 
-  const records = await prisma.emailConfig.findMany();
-  
-  for (const record of records) {
-    let configJson: Record<string, unknown> = {};
-    try {
-      configJson = JSON.parse(record.configJson);
-    } catch {
-      configJson = {};
-    }
-    configJson.customerSendOrderPaidEmail = Boolean(input.customerSendOrderPaidEmail);
-    configJson.customerSendDeliverySuccessEmail = Boolean(input.customerSendDeliverySuccessEmail);
-    configJson.customerSendDeliveryFailedEmail = Boolean(input.customerSendDeliveryFailedEmail);
-    configJson.adminSendOrderPaidEmail = Boolean(input.adminSendOrderPaidEmail);
-    configJson.adminSendDeliverySuccessEmail = Boolean(input.adminSendDeliverySuccessEmail);
-    configJson.adminSendDeliveryFailedEmail = Boolean(input.adminSendDeliveryFailedEmail);
-    
-    await prisma.emailConfig.update({
-      where: { id: record.id },
-      data: { configJson: JSON.stringify(configJson) }
-    });
-  }
+  await updatePushFlagsForAllConfigs(prisma, {
+    customerSendOrderPaidEmail: Boolean(input.customerSendOrderPaidEmail),
+    customerSendDeliverySuccessEmail: Boolean(input.customerSendDeliverySuccessEmail),
+    customerSendDeliveryFailedEmail: Boolean(input.customerSendDeliveryFailedEmail),
+    adminSendOrderPaidEmail: Boolean(input.adminSendOrderPaidEmail),
+    adminSendDeliverySuccessEmail: Boolean(input.adminSendDeliverySuccessEmail),
+    adminSendDeliveryFailedEmail: Boolean(input.adminSendDeliveryFailedEmail),
+  });
 
   await logAdminOperation(
     {
@@ -420,32 +456,28 @@ export async function saveEmailPushSettings(input: {
   return true;
 }
 
-export async function activateEmailProvider(provider: EmailChannel) {
+// ---------------------------------------------------------------------------
+// Public API: activate a specific mailbox config by id
+// ---------------------------------------------------------------------------
+
+export async function activateEmailProvider(id: number) {
   const adminContext = getAdminContext();
   const { prisma } = adminContext;
   const adminId = Number(adminContext.session?.user?.id);
 
-  await prisma.emailConfig.updateMany({
-    where: { provider: { not: provider } },
-    data: { isEnabled: false },
-  });
-
-  const record = await prisma.emailConfig.findUnique({ where: { provider } });
-  if (record) {
-    await prisma.emailConfig.update({
-      where: { provider },
-      data: { isEnabled: true },
-    });
-  } else {
-    throw badRequestError(`配置 ${provider} 不存在，请先保存配置`, "EMAIL_CONFIG_NOT_FOUND");
+  const record = await getEmailConfigRecordById(prisma, id);
+  if (!record) {
+    throw badRequestError("邮局配置不存在", "EMAIL_CONFIG_NOT_FOUND");
   }
+
+  await activateEmailConfigById(prisma, id);
 
   await logAdminOperation(
     {
       action: "ACTIVATE_EMAIL_PROVIDER",
       targetType: "EmailConfig",
-      targetId: provider,
-      detail: `activated`,
+      targetId: String(id),
+      detail: `activated ${record.name} (${record.provider})`,
     },
     {
       prisma,
@@ -456,16 +488,14 @@ export async function activateEmailProvider(provider: EmailChannel) {
   return true;
 }
 
-export async function saveEmailConfig(input: EmailConfigValue) {
-  const adminContext = getAdminContext();
-  const { prisma } = adminContext;
-  const adminId = Number(adminContext.session?.user?.id);
-  const validated = validateEmailConfigInput(input);
+// ---------------------------------------------------------------------------
+// Public API: save (create or update) an email config
+// ---------------------------------------------------------------------------
 
-  let config: Record<string, unknown>;
-  if (validated.provider === "API") {
+function buildConfigJson(input: EmailConfigValue): Record<string, unknown> {
+  if (input.provider === "API") {
     const apiInput = input as EmailApiConfigValue;
-    config = {
+    return {
       apiProvider: apiInput.apiProvider,
       fromEmail: apiInput.fromEmail.trim(),
       fromName: apiInput.fromName?.trim() || "",
@@ -481,9 +511,11 @@ export async function saveEmailConfig(input: EmailConfigValue) {
       adminSendDeliverySuccessEmail: Boolean(apiInput.adminSendDeliverySuccessEmail),
       adminSendDeliveryFailedEmail: Boolean(apiInput.adminSendDeliveryFailedEmail),
     };
-  } else if (validated.provider === "SMTP") {
+  }
+
+  if (input.provider === "SMTP") {
     const smtpInput = input as EmailSmtpConfigValue;
-    config = {
+    return {
       fromEmail: smtpInput.fromEmail.trim(),
       fromName: smtpInput.fromName?.trim() || "",
       replyTo: smtpInput.replyTo?.trim() || "",
@@ -499,40 +531,90 @@ export async function saveEmailConfig(input: EmailConfigValue) {
       adminSendDeliverySuccessEmail: Boolean(smtpInput.adminSendDeliverySuccessEmail),
       adminSendDeliveryFailedEmail: Boolean(smtpInput.adminSendDeliveryFailedEmail),
     };
-  } else {
-    const cloudflareInput = input as EmailCloudflareConfigValue;
-    config = {
-      fromEmail: cloudflareInput.fromEmail.trim(),
-      fromName: cloudflareInput.fromName?.trim() || "",
-      replyTo: cloudflareInput.replyTo?.trim() || "",
-      cloudflareBindingName: cloudflareInput.cloudflareBindingName?.trim() || "",
-      cloudflareDestinationAddress: cloudflareInput.cloudflareDestinationAddress?.trim() || "",
-      cloudflareAllowedDestinationAddresses: cloudflareInput.cloudflareAllowedDestinationAddresses ?? [],
-      customerSendOrderPaidEmail: Boolean(cloudflareInput.customerSendOrderPaidEmail),
-      customerSendDeliverySuccessEmail: Boolean(cloudflareInput.customerSendDeliverySuccessEmail),
-      customerSendDeliveryFailedEmail: Boolean(cloudflareInput.customerSendDeliveryFailedEmail),
-      adminSendOrderPaidEmail: Boolean(cloudflareInput.adminSendOrderPaidEmail),
-      adminSendDeliverySuccessEmail: Boolean(cloudflareInput.adminSendDeliverySuccessEmail),
-      adminSendDeliveryFailedEmail: Boolean(cloudflareInput.adminSendDeliveryFailedEmail),
-    };
   }
 
-  const existingRecord = await prisma.emailConfig.findUnique({
-    where: { provider: validated.provider },
-  });
+  const cloudflareInput = input as EmailCloudflareConfigValue;
+  return {
+    fromEmail: cloudflareInput.fromEmail.trim(),
+    fromName: cloudflareInput.fromName?.trim() || "",
+    replyTo: cloudflareInput.replyTo?.trim() || "",
+    cloudflareBindingName: cloudflareInput.cloudflareBindingName?.trim() || "",
+    cloudflareDestinationAddress: cloudflareInput.cloudflareDestinationAddress?.trim() || "",
+    cloudflareAllowedDestinationAddresses: cloudflareInput.cloudflareAllowedDestinationAddresses ?? [],
+    customerSendOrderPaidEmail: Boolean(cloudflareInput.customerSendOrderPaidEmail),
+    customerSendDeliverySuccessEmail: Boolean(cloudflareInput.customerSendDeliverySuccessEmail),
+    customerSendDeliveryFailedEmail: Boolean(cloudflareInput.customerSendDeliveryFailedEmail),
+    adminSendOrderPaidEmail: Boolean(cloudflareInput.adminSendOrderPaidEmail),
+    adminSendDeliverySuccessEmail: Boolean(cloudflareInput.adminSendDeliverySuccessEmail),
+    adminSendDeliveryFailedEmail: Boolean(cloudflareInput.adminSendDeliveryFailedEmail),
+  };
+}
 
-  const record = await upsertEmailConfigRecord(prisma, validated.provider, {
-    name: getChannelDisplayName(validated.provider),
-    isEnabled: existingRecord?.isEnabled ?? false,
-    configJson: JSON.stringify(config),
+function getDefaultName(input: EmailConfigValue): string {
+  if (input.provider === "API") {
+    const apiInput = input as EmailApiConfigValue;
+    return `${apiInput.apiProvider} - ${apiInput.fromEmail || "未配置"}`;
+  }
+  if (input.provider === "SMTP") {
+    const smtpInput = input as EmailSmtpConfigValue;
+    return `SMTP - ${smtpInput.smtpHost || smtpInput.fromEmail || "未配置"}`;
+  }
+  const cfInput = input as EmailCloudflareConfigValue;
+  return `CloudFlare - ${cfInput.fromEmail || "未配置"}`;
+}
+
+export async function saveEmailConfig(input: EmailConfigValue) {
+  const adminContext = getAdminContext();
+  const { prisma } = adminContext;
+  const adminId = Number(adminContext.session?.user?.id);
+  const validated = validateEmailConfigInput(input);
+
+  const configJson = buildConfigJson({ ...input, provider: validated.provider } as EmailConfigValue);
+  const name = input.name?.trim() || getDefaultName(input);
+
+  // If input has an id, update existing record; otherwise create new
+  if (input.id && input.id > 0) {
+    const existingRecord = await getEmailConfigRecordById(prisma, input.id);
+    if (!existingRecord) {
+      throw badRequestError("邮局配置不存在", "EMAIL_CONFIG_NOT_FOUND");
+    }
+
+    const record = await updateEmailConfigRecord(prisma, input.id, {
+      provider: validated.provider as EmailChannel,
+      name,
+      configJson: JSON.stringify(configJson),
+    });
+
+    await logAdminOperation(
+      {
+        action: "SAVE_EMAIL_CONFIG",
+        targetType: "EmailConfig",
+        targetId: String(input.id),
+        detail: `updated: ${name}`,
+      },
+      {
+        prisma,
+        adminId,
+      },
+    );
+
+    return normalizeEmailConfigFromRecord(record);
+  }
+
+  // Create new
+  const record = await createEmailConfigRecord(prisma, {
+    provider: validated.provider as EmailChannel,
+    name,
+    isEnabled: false,
+    configJson: JSON.stringify(configJson),
   });
 
   await logAdminOperation(
     {
-      action: "SAVE_EMAIL_CONFIG",
+      action: "CREATE_EMAIL_CONFIG",
       targetType: "EmailConfig",
-      targetId: input.provider,
-      detail: `updated`,
+      targetId: String(record.id),
+      detail: `created: ${name}`,
     },
     {
       prisma,
@@ -540,8 +622,48 @@ export async function saveEmailConfig(input: EmailConfigValue) {
     },
   );
 
-  return normalizeEmailConfig(record, validated.provider);
+  return normalizeEmailConfigFromRecord(record);
 }
+
+// ---------------------------------------------------------------------------
+// Public API: delete an email config
+// ---------------------------------------------------------------------------
+
+export async function deleteEmailConfig(id: number) {
+  const adminContext = getAdminContext();
+  const { prisma } = adminContext;
+  const adminId = Number(adminContext.session?.user?.id);
+
+  const record = await getEmailConfigRecordById(prisma, id);
+  if (!record) {
+    throw badRequestError("邮局配置不存在", "EMAIL_CONFIG_NOT_FOUND");
+  }
+
+  if (record.isEnabled) {
+    throw badRequestError("不能删除当前激活的邮局配置，请先激活其他配置", "EMAIL_CONFIG_IS_ACTIVE");
+  }
+
+  await deleteEmailConfigRecord(prisma, id);
+
+  await logAdminOperation(
+    {
+      action: "DELETE_EMAIL_CONFIG",
+      targetType: "EmailConfig",
+      targetId: String(id),
+      detail: `deleted: ${record.name}`,
+    },
+    {
+      prisma,
+      adminId,
+    },
+  );
+
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Public API: save template
+// ---------------------------------------------------------------------------
 
 export async function saveEmailTemplate(input: EmailTemplateValue) {
   const adminContext = getAdminContext();
@@ -576,25 +698,41 @@ export async function saveEmailTemplate(input: EmailTemplateValue) {
   return normalizeEmailTemplate(record, validated.scene as EmailScene);
 }
 
+// ---------------------------------------------------------------------------
+// Public API: send test email
+// ---------------------------------------------------------------------------
+
 export async function sendTestEmail(input: {
   toEmail: string;
   customContent?: string;
+  configId?: number;
 }) {
   const adminContext = getAdminContext();
   const { prisma } = adminContext;
   const adminId = Number(adminContext.session?.user?.id);
   const validated = validateTestEmailInput(input);
-  const baseValues = await getEmailBaseValues(prisma);
+  const site = await getSiteSetting(prisma);
+
+  // If a specific configId is provided, load that config directly instead of using the active one
+  let targetConfig: EmailConfigValue | undefined;
+  if (input.configId && input.configId > 0) {
+    const record = await getEmailConfigRecordById(prisma, input.configId);
+    if (!record) {
+      throw badRequestError("指定的邮局配置不存在", "EMAIL_CONFIG_NOT_FOUND");
+    }
+    targetConfig = normalizeEmailConfigFromRecord(record);
+  }
 
   const result = await sendSceneEmail(prisma, {
     scene: "TEST",
     toEmail: validated.toEmail,
     values: {
-      siteName: baseValues.siteName,
+      siteName: site.siteName,
       sentAt: new Date().toLocaleString("zh-CN"),
       customContent: validated.customContent,
     },
     triggeredBy: `admin:${adminId || 0}`,
+    config: targetConfig,
   });
 
   await logAdminOperation(
@@ -611,6 +749,29 @@ export async function sendTestEmail(input: {
 
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// Public API: clear email logs
+// ---------------------------------------------------------------------------
+
+export async function clearEmailLogs() {
+  const adminContext = getAdminContext();
+  const { prisma } = adminContext;
+  const adminId = Number(adminContext.session?.user?.id);
+
+  const { count } = await prisma.emailLog.deleteMany({});
+
+  await logAdminOperation(
+    { action: "CLEAR_EMAIL_LOGS", targetType: "EmailLog", detail: `deleted ${count} records` },
+    { prisma, adminId },
+  );
+
+  return { count };
+}
+
+// ---------------------------------------------------------------------------
+// Public API: notification hooks (called from order/delivery flows)
+// ---------------------------------------------------------------------------
 
 export async function notifyOrderPaid(input: {
   prisma?: PrismaClient;

@@ -1,6 +1,6 @@
 import { getEmailManagementData } from "../../../modules/email/service";
 
-export type Data = ReturnType<typeof data>;
+export type Data = Awaited<ReturnType<typeof data>>;
 
 export async function data(pageContext: {
   prisma: import("../../../generated/prisma/client").PrismaClient;
@@ -8,10 +8,18 @@ export async function data(pageContext: {
 }) {
   if (pageContext.session?.user?.role !== "admin") {
     return {
-      configs: null,
+      configs: [],
       templates: [],
       logs: [],
       metrics: [],
+      pushSettings: {
+        customerSendOrderPaidEmail: false,
+        customerSendDeliverySuccessEmail: false,
+        customerSendDeliveryFailedEmail: false,
+        adminSendOrderPaidEmail: false,
+        adminSendDeliverySuccessEmail: false,
+        adminSendDeliveryFailedEmail: false,
+      },
     };
   }
 

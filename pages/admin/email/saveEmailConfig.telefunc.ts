@@ -1,9 +1,14 @@
 import { assertAdminAccess } from "../../../modules/auth/service";
-import { activateEmailProvider, saveEmailConfig, saveEmailPushSettings } from "../../../modules/email/service";
+import { activateEmailProvider, clearEmailLogs, deleteEmailConfig, saveEmailConfig, saveEmailPushSettings } from "../../../modules/email/service";
 
 export async function onSaveEmailConfig(input: Record<string, unknown>) {
   assertAdminAccess();
   return saveEmailConfig(input as any);
+}
+
+export async function onDeleteEmailConfig(id: number) {
+  assertAdminAccess();
+  return deleteEmailConfig(id);
 }
 
 export async function onSaveEmailPushSettings(input: {
@@ -18,7 +23,12 @@ export async function onSaveEmailPushSettings(input: {
   return saveEmailPushSettings(input);
 }
 
-export async function onActivateEmailProvider(provider: "API" | "SMTP" | "CLOUDFLARE") {
+export async function onActivateEmailProvider(id: number) {
   assertAdminAccess();
-  return activateEmailProvider(provider);
+  return activateEmailProvider(id);
+}
+
+export async function onClearEmailLogs() {
+  assertAdminAccess();
+  return clearEmailLogs();
 }

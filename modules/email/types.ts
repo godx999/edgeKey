@@ -14,6 +14,8 @@ export interface EmailPushFlags {
 }
 
 export interface EmailApiConfigValue extends EmailPushFlags {
+  id?: number;
+  name?: string;
   provider: "API";
   isEnabled: boolean;
   apiProvider: EmailApiProvider;
@@ -27,6 +29,8 @@ export interface EmailApiConfigValue extends EmailPushFlags {
 }
 
 export interface EmailSmtpConfigValue extends EmailPushFlags {
+  id?: number;
+  name?: string;
   provider: "SMTP";
   isEnabled: boolean;
   fromEmail: string;
@@ -40,6 +44,8 @@ export interface EmailSmtpConfigValue extends EmailPushFlags {
 }
 
 export interface EmailCloudflareConfigValue extends EmailPushFlags {
+  id?: number;
+  name?: string;
   provider: "CLOUDFLARE";
   isEnabled: boolean;
   fromEmail: string;

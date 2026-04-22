@@ -139,7 +139,7 @@ export async function logAdminOperation(input: {
   const prisma = options?.prisma ?? context!.prisma;
   const adminId = options?.adminId ?? Number(context?.session?.user?.id);
 
-  if (!Number.isFinite(adminId)) {
+  if (!Number.isFinite(adminId) || adminId <= 0) {
     return;
   }
 

@@ -3,39 +3,107 @@ import type { EmailApiProvider, EmailChannel, EmailScene } from "./types";
 
 export function listEmailConfigRecords(prisma: PrismaClient) {
   return prisma.emailConfig.findMany({
-    orderBy: [{ provider: "asc" }],
+    orderBy: [{ id: "asc" }],
   });
 }
 
-export function getEmailConfigRecord(prisma: PrismaClient, provider: EmailChannel) {
+export function getEmailConfigRecordById(prisma: PrismaClient, id: number) {
   return prisma.emailConfig.findUnique({
-    where: { provider },
+    where: { id },
   });
 }
 
-export function upsertEmailConfigRecord(
+export function getActiveEmailConfigRecord(prisma: PrismaClient) {
+  return prisma.emailConfig.findFirst({
+    where: { isEnabled: true },
+  });
+}
+
+export function createEmailConfigRecord(
   prisma: PrismaClient,
-  provider: EmailChannel,
   input: {
+    provider: EmailChannel;
     name: string;
     isEnabled: boolean;
     configJson: string;
   },
 ) {
-  return prisma.emailConfig.upsert({
-    where: { provider },
-    create: {
-      provider,
-      name: input.name,
-      isEnabled: input.isEnabled,
-      configJson: input.configJson,
-    },
-    update: {
+  return prisma.emailConfig.create({
+    data: {
+      provider: input.provider,
       name: input.name,
       isEnabled: input.isEnabled,
       configJson: input.configJson,
     },
   });
+}
+
+export function updateEmailConfigRecord(
+  prisma: PrismaClient,
+  id: number,
+  input: {
+    provider?: EmailChannel;
+    name?: string;
+    isEnabled?: boolean;
+    configJson?: string;
+  },
+) {
+  return prisma.emailConfig.update({
+    where: { id },
+    data: input,
+  });
+}
+
+export function deleteEmailConfigRecord(prisma: PrismaClient, id: number) {
+  return prisma.emailConfig.delete({
+    where: { id },
+  });
+}
+
+
+
+export async function activateEmailConfigById(prisma: PrismaClient, id: number) {
+  await prisma.emailConfig.updateMany({
+    where: { id: { not: id } },
+    data: { isEnabled: false },
+  });
+  return prisma.emailConfig.update({
+    where: { id },
+    data: { isEnabled: true },
+  });
+}
+
+export async function updatePushFlagsForAllConfigs(
+  prisma: PrismaClient,
+  flags: {
+    customerSendOrderPaidEmail: boolean;
+    customerSendDeliverySuccessEmail: boolean;
+    customerSendDeliveryFailedEmail: boolean;
+    adminSendOrderPaidEmail: boolean;
+    adminSendDeliverySuccessEmail: boolean;
+    adminSendDeliveryFailedEmail: boolean;
+  },
+) {
+  const records = await prisma.emailConfig.findMany();
+  for (const record of records) {
+    let configJson: Record<string, unknown> = {};
+    try {
+      configJson = JSON.parse(record.configJson);
+    } catch {
+      configJson = {};
+    }
+    configJson.customerSendOrderPaidEmail = flags.customerSendOrderPaidEmail;
+    configJson.customerSendDeliverySuccessEmail = flags.customerSendDeliverySuccessEmail;
+    configJson.customerSendDeliveryFailedEmail = flags.customerSendDeliveryFailedEmail;
+    configJson.adminSendOrderPaidEmail = flags.adminSendOrderPaidEmail;
+    configJson.adminSendDeliverySuccessEmail = flags.adminSendDeliverySuccessEmail;
+    configJson.adminSendDeliveryFailedEmail = flags.adminSendDeliveryFailedEmail;
+
+    await prisma.emailConfig.update({
+      where: { id: record.id },
+      data: { configJson: JSON.stringify(configJson) },
+    });
+  }
 }
 
 export function listEmailTemplateRecords(prisma: PrismaClient) {

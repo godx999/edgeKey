@@ -273,12 +273,14 @@ model PaymentLog {
 
 model EmailConfig {
   id         Int          @id @default(autoincrement())
-  provider   EmailChannel @unique
+  provider   EmailChannel
   name       String
   isEnabled  Boolean      @default(false)
   configJson String
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
+
+  @@index([provider])
 }
 
 model EmailTemplate {
