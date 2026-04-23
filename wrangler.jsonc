@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "edgekey",
+	"name": "edge-key",
 	"compatibility_date": "2026-03-12",
 	"main": "virtual:photon:cloudflare:server-entry",
 	"compatibility_flags": ["nodejs_compat"],
