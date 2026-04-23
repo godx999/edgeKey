@@ -90,10 +90,10 @@ bun install
 
 ```bash
 # 1. 生成 Prisma Client（首次安装依赖后必须执行）
-bunx prisma generate
+bun run db:generate
 
 # 2. 按顺序将所有迁移脚本应用到本地 Wrangler 模拟器
-bunx wrangler d1 migrations apply DB --local
+bun run db:migrations:local
 
 # 3. 初始化管理员账号与初始化种子数据
 bun run db:seed
@@ -121,12 +121,12 @@ bun run dev
 
 3. **按顺序初始化云端表结构**
    ```bash
-   bunx wrangler d1 migrations apply DB --remote
+   bun run db:migrations:remote
    ```
 
 4. **初始化管理员账号与初始化种子数据**
    ```bash
-   bunx wrangler d1 execute DB --remote --file="./scripts/seed.sql"
+   bun run db:seed:remote
    ```
    初始化后默认管理员账号为 `admin / admin123456`，首次登录后请立即修改密码。
 
@@ -138,7 +138,7 @@ bun run dev
 
 6. **生成 Prisma Client 并一键部署**
    ```bash
-   bunx prisma generate
+   bun run db:generate
    bun run up
    ```
 
@@ -192,7 +192,7 @@ bunx prisma migrate diff \
 **第二步：将迁移同步到本地 D1 模拟器（用于本地开发/测试）**
 
 ```bash
-bunx wrangler d1 migrations apply DB --local
+bun run db:migrations:local
 ```
 
 如果不执行这一步，运行 `bun dev` 访问页面时会报错 `no such table`。
@@ -200,7 +200,7 @@ bunx wrangler d1 migrations apply DB --local
 **第三步：将迁移同步到 Cloudflare 线上（发布前）**
 
 ```bash
-bunx wrangler d1 migrations apply DB --remote
+bun run db:migrations:remote
 ```
 
 本地和线上需要分别执行一次。
