@@ -1,5 +1,5 @@
 import { badRequestError, externalServiceError } from "../../lib/app-error";
-import type { EmailApiConfigValue, EmailProviderAdapter, EmailSendInput } from "./types";
+import type { EmailApiConfigValue, EmailProviderAdapter, EmailSendInput, EmailSmtpConfigValue } from "./types";
 
 function normalizeBaseUrl(value: string) {
   return value.replace(/\/+$/, "");
@@ -99,6 +99,39 @@ async function sendMailjetEmail(config: EmailApiConfigValue, input: EmailSendInp
   return {
     messageId: typeof messageId === "number" ? String(messageId) : undefined,
     raw: json,
+  };
+}
+
+export function createSmtpEmailAdapter(config: EmailSmtpConfigValue): EmailProviderAdapter {
+  return {
+    async send(input) {
+      if (!config.smtpHost || !config.smtpPort) {
+        throw badRequestError("SMTP 配置不完整", "SMTP_CONFIG_INCOMPLETE");
+      }
+
+      const { WorkerMailer } = await import("worker-mailer");
+      await WorkerMailer.send(
+        {
+          host: config.smtpHost,
+          port: config.smtpPort,
+          secure: config.smtpSecure ?? false,
+          credentials: config.smtpUsername
+            ? { username: config.smtpUsername, password: config.smtpPassword ?? "" }
+            : undefined,
+          authType: config.smtpAuthType ?? "plain",
+        },
+        {
+          from: { email: config.fromEmail, name: config.fromName },
+          to: input.toEmail,
+          reply: input.replyTo || config.replyTo || undefined,
+          subject: input.subject,
+          text: input.text,
+          html: input.html,
+        },
+      );
+
+      return {};
+    },
   };
 }
 

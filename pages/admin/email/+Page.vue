@@ -254,6 +254,13 @@
               <label class="flex flex-col gap-1.5">
                 <span class="label-text font-medium">SMTP 密码</span>
                 <input v-model="configForm.smtpPassword" class="input input-bordered w-full" />
+              </label><label class="flex flex-col gap-1.5">
+                <span class="label-text font-medium">认证方式</span>
+                <select v-model="configForm.smtpAuthType" class="select select-bordered w-full">
+                  <option value="plain">PLAIN</option>
+                  <option value="login">LOGIN</option>
+                  <option value="cram-md5">CRAM-MD5</option>
+                </select>
               </label>
             </div>
             <label class="label cursor-pointer justify-start gap-3 w-fit">
@@ -574,6 +581,7 @@ interface ConfigFormState {
   smtpSecure: boolean;
   smtpUsername: string;
   smtpPassword: string;
+  smtpAuthType: "plain" | "login" | "cram-md5";
   // Cloudflare
   cloudflareBindingName: string;
   cloudflareDestinationAddress: string;
@@ -597,6 +605,7 @@ function createEmptyForm(): ConfigFormState {
     smtpSecure: false,
     smtpUsername: "",
     smtpPassword: "",
+    smtpAuthType: "plain" as "plain" | "login" | "cram-md5",
     cloudflareBindingName: "",
     cloudflareDestinationAddress: "",
     cloudflareAllowedText: "",
@@ -631,6 +640,7 @@ function openEditDialog(item: MailboxItem) {
     smtpSecure: (item as any).smtpSecure || false,
     smtpUsername: (item as any).smtpUsername || "",
     smtpPassword: (item as any).smtpPassword || "",
+    smtpAuthType: (item as any).smtpAuthType || "plain",
     cloudflareBindingName: (item as any).cloudflareBindingName || "",
     cloudflareDestinationAddress: (item as any).cloudflareDestinationAddress || "",
     cloudflareAllowedText: Array.isArray((item as any).cloudflareAllowedDestinationAddresses)
@@ -770,6 +780,7 @@ async function handleSaveConfig() {
       payload.smtpSecure = configForm.smtpSecure;
       payload.smtpUsername = configForm.smtpUsername;
       payload.smtpPassword = configForm.smtpPassword;
+      payload.smtpAuthType = configForm.smtpAuthType;
     } else {
       payload.cloudflareBindingName = configForm.cloudflareBindingName;
       payload.cloudflareDestinationAddress = configForm.cloudflareDestinationAddress;

@@ -41,6 +41,7 @@ export interface EmailSmtpConfigValue extends EmailPushFlags {
   smtpSecure?: boolean;
   smtpUsername?: string;
   smtpPassword?: string;
+  smtpAuthType?: "plain" | "login" | "cram-md5";
 }
 
 export interface EmailCloudflareConfigValue extends EmailPushFlags {

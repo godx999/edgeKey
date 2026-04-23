@@ -5,7 +5,7 @@ import { logger } from "../../lib/logger";
 import { validateEmailConfigInput, validateEmailTemplateInput, validateTestEmailInput } from "../../lib/validators/email";
 import { getAdminContext, logAdminOperation } from "../auth/service";
 import { getSiteSetting } from "../site/service";
-import { createApiEmailAdapter } from "./provider";
+import { createApiEmailAdapter, createSmtpEmailAdapter } from "./provider";
 import {
   activateEmailConfigById,
   createEmailConfigRecord,
@@ -270,7 +270,19 @@ async function sendByChannel(config: EmailConfigValue, input: {
   }
 
   if (config.provider === "SMTP") {
-    throw badRequestError("当前版本暂未在 Worker 中实现 SMTP 直连发送，请先使用 API 分类", "SMTP_NOT_IMPLEMENTED");
+    const adapter = createSmtpEmailAdapter(config);
+    const result = await adapter.send({
+      toEmail: input.toEmail,
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+      replyTo: config.replyTo,
+    });
+    return {
+      provider: config.provider,
+      apiProvider: undefined,
+      messageId: result.messageId,
+    };
   }
 
   throw badRequestError("当前版本暂未接入 CloudFlare Email Send binding 的运行时发送，请先使用 API 分类", "CLOUDFLARE_NOT_IMPLEMENTED");
