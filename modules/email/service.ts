@@ -795,7 +795,10 @@ export async function notifyOrderPaid(input: {
   toEmail?: string | null;
 }) {
   const prisma = input.prisma ?? getEmailContext().prisma;
-  const config = await getActiveEmailConfig(prisma).catch(() => null);
+  const config = await getActiveEmailConfig(prisma).catch((e) => {
+    logger.error(e instanceof Error ? e : String(e), { event: "email.notify_order_paid.config_failed" });
+    return null;
+  });
   if (!config) return { skipped: true };
 
   const baseValues = await getEmailBaseValues(prisma);
@@ -854,7 +857,10 @@ export async function notifyDeliverySuccess(input: {
   toEmail?: string | null;
 }) {
   const prisma = input.prisma ?? getEmailContext().prisma;
-  const config = await getActiveEmailConfig(prisma).catch(() => null);
+  const config = await getActiveEmailConfig(prisma).catch((e) => {
+    logger.error(e instanceof Error ? e : String(e), { event: "email.notify_delivery_success.config_failed" });
+    return null;
+  });
   if (!config) return { skipped: true };
 
   const baseValues = await getEmailBaseValues(prisma);
@@ -913,7 +919,10 @@ export async function notifyDeliveryFailed(input: {
   errorMessage: string;
 }) {
   const prisma = input.prisma ?? getEmailContext().prisma;
-  const config = await getActiveEmailConfig(prisma).catch(() => null);
+  const config = await getActiveEmailConfig(prisma).catch((e) => {
+    logger.error(e instanceof Error ? e : String(e), { event: "email.notify_delivery_failed.config_failed" });
+    return null;
+  });
   if (!config) return { skipped: true };
 
   const baseValues = await getEmailBaseValues(prisma);
