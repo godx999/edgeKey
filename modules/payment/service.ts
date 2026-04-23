@@ -7,14 +7,14 @@ import { getAdminContext, logAdminOperation } from "../auth/service";
 import { notifyOrderPaid } from "../email/service";
 import { getSiteSetting } from "../site/service";
 import { createPaymentLogRecord, getPaymentConfigRecord, listPaymentConfigRecords, upsertPaymentConfigRecord } from "./repository";
-import type { PaymentMethodItem } from "./types";
+import type { PaymentMethodItem, PaymentProvider } from "./types";
 import type { PaymentConfigValue } from "./types";
 import { createBepusdtAdapter } from "./bepusdt";
 import { createEpayAdapter } from "./epay";
 import { deliverOrder } from "../delivery/service";
 import { findOrderRecord, updateOrderPayment } from "../order/repository";
 
-const defaultPaymentConfigs: Record<"BEPUSDT" | "EPAY", PaymentConfigValue> = {
+const defaultPaymentConfigs: Record<PaymentProvider, PaymentConfigValue> = {
   BEPUSDT: {
     provider: "BEPUSDT",
     name: "USDT",
@@ -41,7 +41,7 @@ function getPaymentContext() {
   return getContext<{ prisma: PrismaClient }>();
 }
 
-function normalizePaymentConfig(record: Awaited<ReturnType<typeof getPaymentConfigRecord>>, provider: "BEPUSDT" | "EPAY"): PaymentConfigValue {
+function normalizePaymentConfig(record: Awaited<ReturnType<typeof getPaymentConfigRecord>>, provider: PaymentProvider): PaymentConfigValue {
   const defaults = defaultPaymentConfigs[provider];
   if (!record) {
     return defaults;
@@ -69,7 +69,7 @@ export async function listEnabledPaymentMethods(prisma?: PrismaClient): Promise<
   const client = prisma ?? getPaymentContext().prisma;
   const records = await listPaymentConfigRecords(client);
 
-  return (["BEPUSDT", "EPAY"] as const).map((provider) => {
+  return (Object.keys(defaultPaymentConfigs) as PaymentProvider[]).map((provider) => {
     const record = records.find((item) => item.provider === provider);
     const value = normalizePaymentConfig(record ?? null, provider);
     return {
@@ -81,17 +81,15 @@ export async function listEnabledPaymentMethods(prisma?: PrismaClient): Promise<
   });
 }
 
-export async function getPaymentConfigs(prisma?: PrismaClient) {
+export async function getPaymentConfigs(prisma?: PrismaClient): Promise<Record<string, PaymentConfigValue>> {
   const client = prisma ?? getPaymentContext().prisma;
-  const [bepusdt, epay] = await Promise.all([
-    getPaymentConfigRecord(client, "BEPUSDT"),
-    getPaymentConfigRecord(client, "EPAY"),
-  ]);
-
-  return {
-    BEPUSDT: normalizePaymentConfig(bepusdt, "BEPUSDT"),
-    EPAY: normalizePaymentConfig(epay, "EPAY"),
-  };
+  const records = await listPaymentConfigRecords(client);
+  const result: Record<string, PaymentConfigValue> = {};
+  for (const provider of Object.keys(defaultPaymentConfigs) as PaymentProvider[]) {
+    const record = records.find((r) => r.provider === provider) ?? null;
+    result[provider] = normalizePaymentConfig(record, provider);
+  }
+  return result;
 }
 
 export async function savePaymentConfig(input: PaymentConfigValue) {
@@ -200,7 +198,7 @@ export async function createPaymentForOrder(orderNo: string, prisma?: PrismaClie
   const notifyUrl = resolveCallbackUrl(
     baseOrigin,
     config.notifyUrl,
-    order.paymentProvider === "BEPUSDT" ? "/api/payments/bepusdt/notify" : "/api/payments/epay/notify",
+    defaultPaymentConfigs[order.paymentProvider as PaymentProvider]?.notifyUrl ?? "/api/payments/notify",
   );
   const returnUrl = resolveCallbackUrl(
     baseOrigin,
@@ -272,7 +270,7 @@ function sanitizePaymentPayload(payload?: Record<string, unknown>) {
 
 async function createNotifyLog(prisma: PrismaClient, input: {
   orderId?: number;
-  provider: "BEPUSDT" | "EPAY";
+  provider: PaymentProvider;
   orderNo?: string;
   paymentOrderNo?: string;
   eventType?: string;
@@ -294,7 +292,7 @@ async function createNotifyLog(prisma: PrismaClient, input: {
 }
 
 function writePaymentNotifyDiagnostic(input: {
-  provider: "BEPUSDT" | "EPAY";
+  provider: PaymentProvider;
   source: string;
   reason: string;
   payload?: Record<string, unknown>;
@@ -322,7 +320,7 @@ function writePaymentNotifyDiagnostic(input: {
 }
 
 export async function handlePaymentNotify(
-  provider: "BEPUSDT" | "EPAY",
+  provider: PaymentProvider,
   payload: Record<string, string>,
   prisma: PrismaClient,
   source: string,

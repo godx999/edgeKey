@@ -1,6 +1,6 @@
 import { getPaymentConfigs } from "../../../modules/payment/service";
 
-export type Data = ReturnType<typeof data>;
+export type Data = Awaited<ReturnType<typeof data>>;
 
 export async function data(pageContext: {
   prisma: import("../../../generated/prisma/client").PrismaClient;

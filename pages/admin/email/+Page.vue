@@ -392,7 +392,7 @@
                 <th>#</th>
                 <th>时间</th>
                 <th>分类</th>
-                <th>API服务商</th>
+                <th>邮箱名称</th>
                 <th>场景</th>
                 <th>状态</th>
                 <th>收件人</th>
@@ -407,7 +407,7 @@
                 <th>{{ index + 1 }}</th>
                 <td class="whitespace-nowrap">{{ formatDate(log.createdAt) }}</td>
                 <td class="whitespace-nowrap">{{ getChannelLabel(log.provider) }}</td>
-                <td class="whitespace-nowrap">{{ log.apiProvider || '-' }}</td>
+                <td class="whitespace-nowrap">{{ configs.find(c => c.provider === log.provider)?.name || '-' }}</td>
                 <td class="whitespace-nowrap">{{ getSceneLabel(log.scene) }}</td>
                 <td>
                   <span class="badge whitespace-nowrap" :class="log.status === 'SUCCESS' ? 'badge-success' : 'badge-error'">

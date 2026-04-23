@@ -6,7 +6,7 @@ export function listPaymentConfigRecords(prisma: PrismaClient) {
   });
 }
 
-export function getPaymentConfigRecord(prisma: PrismaClient, provider: "BEPUSDT" | "EPAY") {
+export function getPaymentConfigRecord(prisma: PrismaClient, provider: string) {
   return prisma.paymentConfig.findUnique({
     where: { provider },
   });
@@ -14,7 +14,7 @@ export function getPaymentConfigRecord(prisma: PrismaClient, provider: "BEPUSDT"
 
 export function upsertPaymentConfigRecord(
   prisma: PrismaClient,
-  provider: "BEPUSDT" | "EPAY",
+  provider: string,
   input: {
     name: string;
     isEnabled: boolean;
@@ -41,7 +41,7 @@ export function createPaymentLogRecord(
   prisma: PrismaClient,
   input: {
     orderId?: number;
-    provider: "BEPUSDT" | "EPAY";
+    provider: string;
     orderNo?: string;
     paymentOrderNo?: string;
     eventType: string;

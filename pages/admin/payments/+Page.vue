@@ -1,17 +1,30 @@
 <template>
   <section class="space-y-6">
     <div class="alert alert-info">
-      <span>启用支付前，请先前往“站点设置”配置网站地址，否则无法获取支付结果。</span>
+      <span>启用支付前，请先前往"站点设置"配置网站地址，否则无法获取支付结果。</span>
     </div>
-    <PaymentConfigCard provider="BEPUSDT" title="BEpusdt / USDT" :initial-value="configs.BEPUSDT" />
-    <PaymentConfigCard provider="EPAY" title="Epay / 聚合支付" :initial-value="configs.EPAY" />
+    <div role="tablist" class="tabs tabs-border">
+      <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'BEPUSDT' }" @click="activeTab = 'BEPUSDT'">
+        BEpusdt / USDT
+        <span v-if="localConfigs.BEPUSDT?.isEnabled" class="ml-1.5 inline-block w-2 h-2 rounded-full bg-success"></span>
+      </a>
+      <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'EPAY' }" @click="activeTab = 'EPAY'">
+        Epay / 聚合支付
+        <span v-if="localConfigs.EPAY?.isEnabled" class="ml-1.5 inline-block w-2 h-2 rounded-full bg-success"></span>
+      </a>
+    </div>
+    <PaymentConfigCard v-if="activeTab === 'BEPUSDT'" provider="BEPUSDT" title="BEpusdt / USDT" :initial-value="localConfigs.BEPUSDT" @saved="localConfigs.BEPUSDT = $event" />
+    <PaymentConfigCard v-if="activeTab === 'EPAY'" provider="EPAY" title="Epay / 聚合支付" :initial-value="localConfigs.EPAY" @saved="localConfigs.EPAY = $event" />
   </section>
 </template>
 
 <script setup lang="ts">
+import { ref, reactive } from "vue";
 import { useData } from "vike-vue/useData";
 import PaymentConfigCard from "./PaymentConfigCard.vue";
 import type { Data } from "./+data";
 
 const { configs } = useData<Data>();
+const activeTab = ref("BEPUSDT");
+const localConfigs = reactive({ ...configs });
 </script>

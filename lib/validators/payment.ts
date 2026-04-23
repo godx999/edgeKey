@@ -3,7 +3,7 @@ import { badRequestError } from "../app-error";
 export function validatePaymentConfigInput(input: {
   name?: string;
   baseUrl?: string;
-  provider: "BEPUSDT" | "EPAY";
+  provider: string;
   isEnabled?: boolean;
   appSecret?: string;
   pid?: string;

@@ -48,10 +48,7 @@ enum ContactType {
   OTHER
 }
 
-enum PaymentProvider {
-  BEPUSDT
-  EPAY
-}
+
 
 enum EmailChannel {
   API
@@ -208,7 +205,7 @@ model Order {
   contactType         ContactType     @default(EMAIL)
   contactValue        String?
   buyerNote           String?
-  paymentProvider     PaymentProvider
+  paymentProvider     String
   paymentChannel      String?
   paymentOrderNo      String?
   status              OrderStatus     @default(PENDING)
@@ -245,7 +242,7 @@ model OrderDelivery {
 
 model PaymentConfig {
   id         Int             @id @default(autoincrement())
-  provider   PaymentProvider @unique
+  provider   String @unique
   name       String
   isEnabled  Boolean         @default(false)
   configJson String
@@ -256,7 +253,7 @@ model PaymentConfig {
 model PaymentLog {
   id             Int                 @id @default(autoincrement())
   orderId        Int?
-  provider       PaymentProvider
+  provider       String
   orderNo        String?
   paymentOrderNo String?
   eventType      String

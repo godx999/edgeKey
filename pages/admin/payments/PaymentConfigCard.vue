@@ -23,27 +23,7 @@
         </label>
       </div>
 
-      <div v-if="provider === 'BEPUSDT'" class="grid gap-4 md:grid-cols-2">
-        <label class="flex flex-col gap-1.5">
-          <span class="label-text font-medium">App ID</span>
-          <input v-model="form.appId" class="input input-bordered w-full" />
-        </label>
-        <label class="flex flex-col gap-1.5">
-          <span class="label-text font-medium">App Secret</span>
-          <input v-model="form.appSecret" class="input input-bordered w-full" />
-        </label>
-      </div>
-
-      <div v-else class="grid gap-4 md:grid-cols-2">
-        <label class="flex flex-col gap-1.5">
-          <span class="label-text font-medium">PID</span>
-          <input v-model="form.pid" class="input input-bordered w-full" />
-        </label>
-        <label class="flex flex-col gap-1.5">
-          <span class="label-text font-medium">Key</span>
-          <input v-model="form.key" class="input input-bordered w-full" />
-        </label>
-      </div>
+      <component :is="formMap[provider]" v-model="extraFields" />
 
       <div class="grid gap-4 md:grid-cols-2">
         <label class="flex flex-col gap-1.5">
@@ -55,10 +35,6 @@
           <input v-model="form.returnUrl" class="input input-bordered w-full" placeholder="/order/{orderNo}?token={token}" />
         </label>
       </div>
-
-      <p v-if="provider === 'EPAY'" class="text-xs text-base-content/60">
-        `Notify URL` 和 `Return URL` 支持填写相对路径或完整 URL；`Return URL` 支持 `{orderNo}`、`{token}` 占位符。
-      </p>
 
       <div class="flex items-center gap-3">
         <button class="btn btn-primary" :disabled="saving" @click="handleSave">
@@ -72,15 +48,22 @@
 </template>
 
 <script setup lang="ts">
-import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref } from "vue";
+import { normalizeTelefuncError } from "../../../lib/app-error";
 import { onSavePaymentConfig } from "./savePaymentConfig.telefunc";
+import BEpusdtForm from "./forms/BEpusdtForm.vue";
+import EpayForm from "./forms/EpayForm.vue";
+import type { PaymentProvider } from "../../../modules/payment/types";
+
+const formMap = { BEPUSDT: BEpusdtForm, EPAY: EpayForm };
+
+const emit = defineEmits<{ saved: [value: typeof props.initialValue] }>();
 
 const props = defineProps<{
-  provider: "BEPUSDT" | "EPAY";
+  provider: PaymentProvider;
   title: string;
   initialValue: {
-    provider: "BEPUSDT" | "EPAY";
+    provider: PaymentProvider;
     name: string;
     isEnabled: boolean;
     baseUrl: string;
@@ -94,17 +77,18 @@ const props = defineProps<{
 }>();
 
 const form = reactive({
-  provider: props.provider,
   name: props.initialValue?.name ?? (props.provider === 'BEPUSDT' ? 'USDT' : '聚合支付'),
   isEnabled: props.initialValue?.isEnabled ?? false,
   baseUrl: props.initialValue?.baseUrl ?? '',
-  appId: props.initialValue?.appId ?? '',
-  appSecret: props.initialValue?.appSecret ?? '',
-  pid: props.initialValue?.pid ?? '',
-  key: props.initialValue?.key ?? '',
   notifyUrl: props.initialValue?.notifyUrl ?? '',
   returnUrl: props.initialValue?.returnUrl ?? '',
 });
+
+const extraFields = reactive(
+  props.provider === 'BEPUSDT'
+    ? { appId: props.initialValue?.appId ?? '', appSecret: props.initialValue?.appSecret ?? '' }
+    : { pid: props.initialValue?.pid ?? '', key: props.initialValue?.key ?? '' }
+);
 
 const saving = ref(false);
 const saved = ref(false);
@@ -114,19 +98,22 @@ async function handleSave() {
   saving.value = true;
   saved.value = false;
   errorMessage.value = '';
-
   try {
-    const result = await onSavePaymentConfig({ ...form });
+    const result = await onSavePaymentConfig({ provider: props.provider, ...form, ...extraFields });
     form.name = result.name;
     form.isEnabled = result.isEnabled;
     form.baseUrl = result.baseUrl;
-    form.appId = result.appId ?? '';
-    form.appSecret = result.appSecret ?? '';
-    form.pid = result.pid ?? '';
-    form.key = result.key ?? '';
     form.notifyUrl = result.notifyUrl ?? '';
     form.returnUrl = result.returnUrl ?? '';
+    if (props.provider === 'BEPUSDT') {
+      (extraFields as any).appId = result.appId ?? '';
+      (extraFields as any).appSecret = result.appSecret ?? '';
+    } else {
+      (extraFields as any).pid = result.pid ?? '';
+      (extraFields as any).key = result.key ?? '';
+    }
     saved.value = true;
+    emit('saved', { provider: props.provider, ...form, ...extraFields });
   } catch (error) {
     errorMessage.value = normalizeTelefuncError(error, '保存失败');
   } finally {
