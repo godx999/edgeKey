@@ -69,6 +69,8 @@
             </div>
           </div>
 
+
+
           <button class="btn btn-primary" :disabled="submitting || !paymentMethods.length" @click="handleCreateOrder">
             {{ submitting ? '提交中...' : '提交订单' }}
           </button>
@@ -88,6 +90,8 @@ import { isEmail } from "../../../lib/validators/email";
 import { formatCents } from "../../../lib/utils/money";
 import { onCreateOrder } from "./createOrder.telefunc";
 import type { PaymentProvider } from "../../../modules/payment/types";
+import { isMobile } from "../../../lib/utils/device";
+import { onMounted, watch } from "vue";
 import { saveLocalOrder } from "../../../lib/local-orders";
 import type { Data } from "./+data";
 
@@ -101,12 +105,26 @@ const epayChannels = [
   { value: "wxpay", label: "微信支付" },
 ] as const;
 
+
+
 const form = reactive({
   quantity: product?.minBuy ?? 1,
   contactValue: "",
   buyerNote: "",
   paymentProvider: (paymentMethods[0]?.provider ?? "BEPUSDT") as PaymentProvider,
-  paymentChannel: "alipay",
+  paymentChannel: "alipay_h5",
+});
+
+let mobile = false;
+onMounted(() => {
+  mobile = isMobile();
+  form.paymentChannel = mobile ? "alipay_h5" : "alipay_pc";
+});
+
+watch(() => form.paymentProvider, (provider) => {
+  if (provider === "EPAY") form.paymentChannel = "alipay";
+  else if (provider === "ALIPAY") form.paymentChannel = mobile ? "alipay_h5" : "alipay_pc";
+  else form.paymentChannel = "";
 });
 
 const descriptionHtml = formatDescriptionHtml(product?.description || "");
@@ -133,7 +151,7 @@ async function handleCreateOrder() {
       productId: product.id,
       quantity: form.quantity,
       paymentProvider: form.paymentProvider,
-      paymentChannel: form.paymentProvider === "EPAY" ? form.paymentChannel : form.paymentProvider === "ALIPAY" ? "pc" : undefined,
+      paymentChannel: form.paymentProvider === "EPAY" || form.paymentProvider === "ALIPAY" ? form.paymentChannel : undefined,
       contactType: "EMAIL",
       contactValue: contactEmail,
       buyerNote: form.buyerNote,

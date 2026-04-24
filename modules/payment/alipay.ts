@@ -1,7 +1,14 @@
-import { badRequestError } from "../../lib/app-error";
+import { badRequestError, externalServiceError } from "../../lib/app-error";
 import type { PaymentProviderAdapter } from "./provider";
 
-interface AlipayConfig {
+export interface AlipayTradeQueryResult {
+  isPaid: boolean;
+  tradeNo?: string;
+  amount?: number;
+}
+
+export interface AlipayConfig {
+  baseUrl?: string;
   alipayAppId?: string;
   alipayPrivateKey?: string;
   alipayPublicKey?: string;
@@ -9,7 +16,7 @@ interface AlipayConfig {
   returnUrl?: string;
 }
 
-const GATEWAY = "https://openapi.alipay.com/gateway.do";
+const DEFAULT_GATEWAY = "https://openapi.alipay.com/gateway.do";
 
 function pemToBase64(pem: string) {
   return pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
@@ -58,38 +65,39 @@ function buildSignString(params: Record<string, string>) {
 export function createAlipayAdapter(config: AlipayConfig): PaymentProviderAdapter {
   return {
     async createPayment(input) {
+      const gateway = config.baseUrl?.trim().replace(/\/+$/, "") || DEFAULT_GATEWAY;
+
       if (!config.alipayAppId || !config.alipayPrivateKey) {
         throw badRequestError("支付宝配置不完整", "ALIPAY_CONFIG_INCOMPLETE");
       }
 
-      const method = input.paymentChannel === "pc" ? "alipay.trade.page.pay" : "alipay.trade.wap.pay";
+      const method = input.paymentChannel === "alipay_pc" ? "alipay.trade.page.pay" : "alipay.trade.wap.pay";
       const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
 
       const bizContent = JSON.stringify({
         out_trade_no: input.orderNo,
         total_amount: (input.amount / 100).toFixed(2),
         subject: input.productName,
-        product_code: input.paymentChannel === "pc" ? "FAST_INSTANT_TRADE_PAY" : "QUICK_WAP_WAY",
+        product_code: input.paymentChannel === "alipay_pc" ? "FAST_INSTANT_TRADE_PAY" : "QUICK_WAP_WAY",
       });
 
-      const params: Record<string, string> = {
-        app_id: config.alipayAppId,
-        method,
-        charset: "utf-8",
-        sign_type: "RSA2",
-        timestamp,
-        version: "1.0",
-        notify_url: input.notifyUrl,
-        return_url: input.returnUrl,
-        biz_content: bizContent,
-      };
+      const params: Record<string, string> = {};
+      params.app_id = config.alipayAppId;
+      params.method = method;
+      params.charset = "utf-8";
+      params.sign_type = "RSA2";
+      params.timestamp = timestamp;
+      params.version = "1.0";
+      if (input.notifyUrl) params.notify_url = input.notifyUrl;
+      if (input.returnUrl) params.return_url = input.returnUrl;
+      params.biz_content = bizContent;
 
       const signStr = buildSignString(params);
       const sign = await rsaSign(signStr, config.alipayPrivateKey);
 
       const query = new URLSearchParams({ ...params, sign }).toString();
       return {
-        payUrl: `${GATEWAY}?${query}`,
+        payUrl: `${gateway}?${query}`,
         paymentOrderNo: input.orderNo,
         raw: params,
       };
@@ -120,5 +128,46 @@ export function createAlipayAdapter(config: AlipayConfig): PaymentProviderAdapte
         message: isValid ? "ok" : "invalid signature",
       };
     },
+  };
+}
+
+export async function queryAlipayTrade(config: AlipayConfig, outTradeNo: string): Promise<AlipayTradeQueryResult> {
+  if (!config.alipayAppId || !config.alipayPrivateKey) {
+    throw badRequestError("支付宝配置不完整", "ALIPAY_CONFIG_INCOMPLETE");
+  }
+
+  const gateway = config.baseUrl?.trim().replace(/\/+$/, "") || DEFAULT_GATEWAY;
+  const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+  const params: Record<string, string> = {
+    app_id: config.alipayAppId,
+    method: "alipay.trade.query",
+    charset: "utf-8",
+    sign_type: "RSA2",
+    timestamp,
+    version: "1.0",
+    biz_content: JSON.stringify({ out_trade_no: outTradeNo }),
+  };
+
+  const sign = await rsaSign(buildSignString(params), config.alipayPrivateKey);
+  const response = await fetch(`${gateway}?${new URLSearchParams({ ...params, sign }).toString()}`);
+  const json = await response.json() as {
+    alipay_trade_query_response?: {
+      code?: string;
+      trade_status?: string;
+      trade_no?: string;
+      total_amount?: string;
+    };
+  };
+
+  const res = json.alipay_trade_query_response;
+  if (!res || res.code !== "10000") {
+    throw externalServiceError(`支付宝查询失败: ${res?.code}`, "ALIPAY_QUERY_FAILED");
+  }
+
+  const isPaid = res.trade_status === "TRADE_SUCCESS" || res.trade_status === "TRADE_FINISHED";
+  return {
+    isPaid,
+    tradeNo: res.trade_no,
+    amount: res.total_amount ? Math.round(Number(res.total_amount) * 100) : undefined,
   };
 }

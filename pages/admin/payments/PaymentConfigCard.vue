@@ -23,7 +23,7 @@
         </label>
       </div>
 
-      <component :is="formMap[provider]" v-model="(extraFields as unknown as Record<string, string>)" />
+      <component :is="formMap[provider]" v-model="extraFields" />
 
       <div class="grid gap-4 md:grid-cols-2">
         <label class="flex flex-col gap-1.5">
@@ -54,7 +54,7 @@ import { onSavePaymentConfig } from "./savePaymentConfig.telefunc";
 import BEpusdtForm from "./forms/BEpusdtForm.vue";
 import EpayForm from "./forms/EpayForm.vue";
 import AlipayForm from "./forms/AlipayForm.vue";
-import type { PaymentProvider } from "../../../modules/payment/types";
+import type { PaymentProvider, PaymentConfigValue } from "../../../modules/payment/types";
 
 const formMap = { BEPUSDT: BEpusdtForm, EPAY: EpayForm, ALIPAY: AlipayForm };
 
@@ -63,18 +63,7 @@ const emit = defineEmits<{ saved: [value: typeof props.initialValue] }>();
 const props = defineProps<{
   provider: PaymentProvider;
   title: string;
-  initialValue: {
-    provider: PaymentProvider;
-    name: string;
-    isEnabled: boolean;
-    baseUrl: string;
-    appId?: string;
-    appSecret?: string;
-    pid?: string;
-    key?: string;
-    notifyUrl?: string;
-    returnUrl?: string;
-  } | null;
+  initialValue: PaymentConfigValue | null;
 }>();
 
 const form = reactive({
@@ -89,7 +78,7 @@ const extraFields = reactive(
   props.provider === 'BEPUSDT'
     ? { appId: props.initialValue?.appId ?? '', appSecret: props.initialValue?.appSecret ?? '' }
     : props.provider === 'ALIPAY'
-      ? { alipayAppId: (props.initialValue as any)?.alipayAppId ?? '', alipayPrivateKey: (props.initialValue as any)?.alipayPrivateKey ?? '', alipayPublicKey: (props.initialValue as any)?.alipayPublicKey ?? '' }
+      ? { alipayAppId: props.initialValue?.alipayAppId ?? '', alipayPrivateKey: props.initialValue?.alipayPrivateKey ?? '', alipayPublicKey: props.initialValue?.alipayPublicKey ?? '' }
       : { pid: props.initialValue?.pid ?? '', key: props.initialValue?.key ?? '' }
 );
 

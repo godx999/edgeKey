@@ -19,5 +19,5 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ modelValue: Record<string, string> }>();
+defineProps<{ modelValue: Record<string, any> }>();
 </script>

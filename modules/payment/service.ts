@@ -11,9 +11,10 @@ import type { PaymentMethodItem, PaymentProvider } from "./types";
 import type { PaymentConfigValue } from "./types";
 import { createBepusdtAdapter } from "./bepusdt";
 import { createEpayAdapter } from "./epay";
-import { createAlipayAdapter } from "./alipay";
+import { createAlipayAdapter, queryAlipayTrade } from "./alipay";
 import { deliverOrder } from "../delivery/service";
 import { findOrderRecord, updateOrderPayment } from "../order/repository";
+import { notifyOrderPaid as _notifyOrderPaid } from "../email/service";
 
 const defaultPaymentConfigs: Record<PaymentProvider, PaymentConfigValue> = {
   BEPUSDT: {
@@ -334,6 +335,42 @@ function writePaymentNotifyDiagnostic(input: {
     ...context,
     error: input.error ? String(input.error) : undefined,
   });
+}
+
+export async function queryAlipayPayment(orderNo: string, prisma?: PrismaClient) {
+  const client = prisma ?? getPaymentContext().prisma;
+  const order = await findOrderRecord(client, orderNo);
+  if (!order) throw notFoundError("订单不存在", "ORDER_NOT_FOUND");
+  if (order.paymentStatus === "PAID") return { alreadyPaid: true };
+
+  const configs = await getPaymentConfigs(client);
+  const config = configs["ALIPAY"];
+  const result = await queryAlipayTrade(config, orderNo);
+
+  if (result.isPaid) {
+    const updated = await updateOrderPayment(client, orderNo, {
+      paymentOrderNo: result.tradeNo,
+      status: "PAID",
+      paymentStatus: "PAID",
+      paidAt: new Date(),
+    });
+    if (updated) {
+      await createPaymentLogRecord(client, {
+        orderId: order.id,
+        provider: "ALIPAY",
+        orderNo,
+        paymentOrderNo: result.tradeNo,
+        eventType: "QUERY_PAID",
+        rawPayload: JSON.stringify(result),verifyStatus: "VERIFIED",
+        message: "paid via query",
+      });
+      try {
+        await deliverOrder(client, orderNo);
+      } catch {}
+    }
+  }
+
+  return { alreadyPaid: false, isPaid: result.isPaid };
 }
 
 export async function handlePaymentNotify(

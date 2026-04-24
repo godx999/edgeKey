@@ -51,16 +51,27 @@
 
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../../lib/app-error";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useData } from "vike-vue/useData";
 import { formatCents } from "../../../lib/utils/money";
 import { getDeliveryStatusLabel, getOrderStatusLabel, getPaymentProviderLabel, getPaymentStatusLabel } from "../../../lib/utils/order-status";
 import { onCreatePayment } from "./createPayment.telefunc";
+import { onQueryAlipayPayment } from "./queryAlipayPayment.telefunc";
 import type { Data } from "./+data";
 
 const { order } = useData<Data>();
 const paying = ref(false);
 const paymentError = ref("");
+
+onMounted(async () => {
+  if (!order || order.paymentStatus !== "UNPAID" || order.paymentProvider !== "ALIPAY") return;
+  const params = new URLSearchParams(window.location.search);
+  if (!params.get("out_trade_no")) return;
+  try {
+    const result = await onQueryAlipayPayment({ orderNo: order.orderNo });
+    if (result.isPaid || result.alreadyPaid) window.location.reload();
+  } catch {}
+});
 
 async function handleContinuePay() {
   if (!order) return;

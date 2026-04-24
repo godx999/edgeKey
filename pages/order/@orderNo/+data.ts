@@ -1,6 +1,6 @@
 import { getOrderForQuery } from "../../../modules/order/service";
 
-export type Data = ReturnType<typeof data>;
+export type Data = Awaited<ReturnType<typeof data>>;
 
 export async function data(pageContext: {
   routeParams: { orderNo: string };

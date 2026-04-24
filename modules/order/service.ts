@@ -56,12 +56,12 @@ export async function createOrder(input: {
   const quantity = Math.max(product.minBuy, Math.min(product.maxBuy, Math.floor(input.quantity)));
   const orderNo = generateOrderNo();
   const queryToken = generateQueryToken();
-  const paymentChannel =
-    input.paymentProvider === "EPAY"
-      ? input.paymentChannel === "wxpay"
-        ? "wxpay"
-        : "alipay"
-      : null;
+  let paymentChannel: string | null = null;
+  if (input.paymentProvider === "EPAY") {
+    paymentChannel = input.paymentChannel === "wxpay" ? "wxpay" : "alipay";
+  } else if (input.paymentProvider === "ALIPAY") {
+    paymentChannel = input.paymentChannel ?? "alipay_h5";
+  }
 
   const order = await createOrderRecord(prisma, {
     orderNo,
