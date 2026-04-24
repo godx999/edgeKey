@@ -2,57 +2,127 @@
   <section class="card bg-base-100 shadow-sm">
     <div class="card-body space-y-4">
       <h1 class="text-2xl font-bold">订单管理</h1>
-      <div class="overflow-x-auto">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>订单号</th>
-              <th>商品</th>
-              <th>金额</th>
-              <th>支付方式</th>
-              <th>状态</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="!orders.length">
-              <td colspan="6" class="text-center text-base-content/60">当前还没有订单。</td>
-            </tr>
-            <tr v-for="order in orders" :key="order.id">
-              <td>
-                <div class="font-medium">{{ order.orderNo }}</div>
-                <div class="text-xs text-base-content/60">{{ formatDate(order.createdAt) }}</div>
-              </td>
-              <td>{{ order.productName }}</td>
-              <td>{{ formatCents(order.amount) }}</td>
-              <td>{{ getPaymentProviderLabel(order.paymentProvider) }}</td>
-              <td>
-                <div class="flex flex-wrap gap-1">
-                  <span class="badge badge-outline">{{ getOrderStatusLabel(order.status) }}</span>
-                  <span class="badge badge-outline">{{ getPaymentStatusLabel(order.paymentStatus) }}</span>
-                  <span class="badge badge-outline">{{ getDeliveryStatusLabel(order.deliveryStatus) }}</span>
-                </div>
-              </td>
-              <td>
-                <a :href="`/admin/orders/${order.id}`" class="btn btn-xs btn-outline">详情</a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+
+      <!-- 搜索筛选 -->
+      <div class="flex flex-wrap gap-3 items-center">
+        <input v-model="filter.orderNo" class="input input-sm input-bordered w-48" placeholder="订单号" />
+        <input v-model="filter.productName" class="input input-sm input-bordered w-40" placeholder="商品名称" />
+        <select v-model="filter.paymentProvider" class="select select-sm select-bordered w-36">
+          <option value="">全部支付方式</option>
+          <option value="EPAY">易支付</option>
+          <option value="ALIPAY">支付宝</option>
+          <option value="BEPUSDT">USDT</option>
+        </select>
+        <select v-model="filter.status" class="select select-sm select-bordered w-32">
+          <option value="">全部状态</option>
+          <option value="PENDING">待支付</option>
+          <option value="PAID">已支付</option>
+          <option value="DELIVERED">已发货</option>
+          <option value="CLOSED">已关闭</option><option value="FAILED">失败</option>
+        </select>
+        <input v-model="filter.startDate" type="date" class="input input-sm input-bordered w-40" />
+        <input v-model="filter.endDate" type="date" class="input input-sm input-bordered w-40" />
+        <button class="btn btn-sm btn-primary" @click="handleSearch">搜索</button>
+        <button class="btn btn-sm btn-ghost" @click="handleReset">重置</button>
       </div>
+
+      <DataTable
+        :columns="columns"
+        :rows="orderPage.items"
+        :total="orderPage.total"
+        :page="currentPage"
+        :page-size="PAGE_SIZE"
+        @update:page="fetchPage"
+      >
+        <template #amount="{ value }">{{ formatCents(value) }}</template>
+        <template #paymentProvider="{ value }">{{ getPaymentProviderLabel(value) }}</template>
+        <template #status="{ row }">
+          <div class="flex flex-wrap gap-1">
+            <span class="badge" :class="orderStatusClass(row.status)">{{ getOrderStatusLabel(row.status) }}</span>
+            <span class="badge" :class="paymentStatusClass(row.paymentStatus)">{{ getPaymentStatusLabel(row.paymentStatus) }}</span>
+            <span class="badge" :class="deliveryStatusClass(row.deliveryStatus)">{{ getDeliveryStatusLabel(row.deliveryStatus) }}</span>
+          </div>
+        </template>
+        <template #createdAt="{ value }">{{ new Date(value).toLocaleString() }}</template>
+        <template #actions="{ row }">
+          <a :href="`/admin/orders/${row.id}`" class="btn btn-xs btn-outline">详情</a>
+        </template>
+      </DataTable>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { reactive, ref } from "vue";
 import { useData } from "vike-vue/useData";
+import DataTable from "../../../components/DataTable.vue";
 import { formatCents } from "../../../lib/utils/money";
 import { getDeliveryStatusLabel, getOrderStatusLabel, getPaymentProviderLabel, getPaymentStatusLabel } from "../../../lib/utils/order-status";
+import { onQueryOrders } from "./queryOrders.telefunc";
 import type { Data } from "./+data";
 
 const { orders } = useData<Data>();
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString();
+const PAGE_SIZE = 20;
+const currentPage = ref(1);
+const orderPage = ref(orders);
+
+const filter = reactive({ orderNo: "", productName: "", paymentProvider: "", status: "", startDate: "", endDate: "" });
+
+const columns = [
+  { key: "orderNo", label: "订单号" },
+  { key: "productName", label: "商品" },
+  { key: "amount", label: "金额" },
+  { key: "paymentProvider", label: "支付方式" },
+  { key: "status", label: "状态" },
+  { key: "createdAt", label: "时间" },
+  { key: "actions", label: "操作" },
+];
+
+async function fetchPage(page: number) {
+  orderPage.value = await onQueryOrders({
+    orderNo: filter.orderNo || undefined,
+    productName: filter.productName || undefined,
+    paymentProvider: filter.paymentProvider || undefined,
+    status: filter.status || undefined,
+    startDate: filter.startDate || undefined,
+    endDate: filter.endDate || undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+  currentPage.value = page;
+}
+
+async function handleSearch() { await fetchPage(1); }
+
+/**
+ * 获取订单状态对应的样式类，采用 badge-soft 提升可读性
+ */
+function orderStatusClass(s: string) {
+  return "badge-soft " + ({ PENDING: "badge-warning", PAID: "badge-info", DELIVERED: "badge-success", CLOSED: "badge-ghost", FAILED: "badge-error" }[s] ?? "badge-outline");
+}
+
+/**
+ * 获取支付状态对应的样式类
+ */
+function paymentStatusClass(s: string) {
+  return "badge-soft " + ({ UNPAID: "badge-warning", PAID: "badge-success", FAILED: "badge-error" }[s] ?? "badge-outline");
+}
+
+/**
+ * 获取发货状态对应的样式类
+ */
+function deliveryStatusClass(s: string) {
+  return "badge-soft " + ({ NOT_DELIVERED: "badge-warning", DELIVERED: "badge-success", FAILED: "badge-error" }[s] ?? "badge-outline");
+}
+
+async function handleReset() {
+  filter.orderNo = "";
+  filter.productName = "";
+  filter.paymentProvider = "";
+  filter.status = "";
+  filter.startDate = "";
+  filter.endDate = "";
+  await fetchPage(1);
 }
 </script>
