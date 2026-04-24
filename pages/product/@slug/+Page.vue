@@ -87,6 +87,7 @@ import { useData } from "vike-vue/useData";
 import { isEmail } from "../../../lib/validators/email";
 import { formatCents } from "../../../lib/utils/money";
 import { onCreateOrder } from "./createOrder.telefunc";
+import type { PaymentProvider } from "../../../modules/payment/types";
 import { saveLocalOrder } from "../../../lib/local-orders";
 import type { Data } from "./+data";
 
@@ -104,7 +105,7 @@ const form = reactive({
   quantity: product?.minBuy ?? 1,
   contactValue: "",
   buyerNote: "",
-  paymentProvider: (paymentMethods[0]?.provider ?? "BEPUSDT") as "BEPUSDT" | "EPAY",
+  paymentProvider: (paymentMethods[0]?.provider ?? "BEPUSDT") as PaymentProvider,
   paymentChannel: "alipay",
 });
 
@@ -132,7 +133,7 @@ async function handleCreateOrder() {
       productId: product.id,
       quantity: form.quantity,
       paymentProvider: form.paymentProvider,
-      paymentChannel: form.paymentProvider === "EPAY" ? form.paymentChannel : undefined,
+      paymentChannel: form.paymentProvider === "EPAY" ? form.paymentChannel : form.paymentProvider === "ALIPAY" ? "pc" : undefined,
       contactType: "EMAIL",
       contactValue: contactEmail,
       buyerNote: form.buyerNote,

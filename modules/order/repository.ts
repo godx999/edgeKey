@@ -1,4 +1,5 @@
 import type { PrismaClient } from "../../generated/prisma/client";
+import type { PaymentProvider } from "../payment/types";
 
 export function findOrderRecord(prisma: PrismaClient, orderNo: string) {
   return prisma.order.findUnique({
@@ -51,7 +52,7 @@ export function createOrderRecord(
     contactType: "EMAIL" | "QQ" | "TELEGRAM" | "OTHER";
     contactValue?: string | null;
     buyerNote?: string | null;
-    paymentProvider: "BEPUSDT" | "EPAY";
+    paymentProvider: PaymentProvider;
     paymentChannel?: string | null;
   },
 ) {

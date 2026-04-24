@@ -1,4 +1,5 @@
 import { getContext } from "telefunc";
+import type { PaymentProvider } from "../payment/types";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { conflictError, notFoundError } from "../../lib/app-error";
 import { validateOrderInput } from "../../lib/validators/order";
@@ -38,7 +39,7 @@ function sleep(ms: number) {
 export async function createOrder(input: {
   productId: number;
   quantity: number;
-  paymentProvider: "BEPUSDT" | "EPAY";
+  paymentProvider: PaymentProvider;
   paymentChannel?: string;
   contactType: "EMAIL" | "QQ" | "TELEGRAM" | "OTHER";
   contactValue?: string;
