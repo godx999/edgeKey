@@ -3,7 +3,7 @@ import type { PrismaClient } from "../../generated/prisma/client";
 import { badRequestError } from "../../lib/app-error";
 import { getAdminContext, logAdminOperation } from "../auth/service";
 import { parseCardLines } from "./importer";
-import { countCardStats, createCardRecord, createManyCards, deleteUnusedCardsByProduct, listCardRecords } from "./repository";
+import { countCardStats, createCardRecord, createManyCards, deleteCardById, deleteUnusedCardsByProduct, listCardRecords, listCardRecordsPaged } from "./repository";
 
 function getInventoryContext() {
   return getContext<{ prisma: PrismaClient }>();
@@ -153,5 +153,42 @@ export async function deleteUnusedCards(input: { productId: number }) {
 
   return {
     count: result.count,
+  };
+}
+
+export async function deleteCard(input: { id: number }) {
+  const adminContext = getAdminContext();
+  const { prisma } = adminContext;
+  const adminId = Number(adminContext.session?.user?.id);
+  const result = await deleteCardById(prisma, input.id);
+  if (result.count === 0) throw badRequestError("卡密不存在或已售出，无法删除", "CARD_DELETE_FAILED");
+  await logAdminOperation({ action: "DELETE_CARD", targetType: "Card", targetId: String(input.id), detail: "" }, { prisma, adminId });
+  return { id: input.id };
+}
+
+export async function getAdminCardsPaged(params: {
+  productId?: number;
+  batchNo?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  page: number;
+  pageSize: number;
+}) {
+  const { prisma } = getAdminContext();
+  const [cards, total] = await listCardRecordsPaged(prisma, params);
+  return {
+    total,
+    items: cards.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.product.name,
+      status: item.status,
+      batchNo: item.batchNo,
+      orderId: item.orderId,
+      soldAt: item.soldAt ? item.soldAt.toISOString() : null,
+      createdAt: item.createdAt.toISOString(),
+      contentPreview: previewCard(item.content),
+    })),
   };
 }

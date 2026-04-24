@@ -63,3 +63,41 @@ export function countCardStats(prisma: PrismaClient) {
     },
   });
 }
+
+export function listCardRecordsPaged(
+  prisma: PrismaClient,
+  params: {
+    productId?: number;
+    batchNo?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    page: number;
+    pageSize: number;
+  },
+) {
+  const where: import("../../generated/prisma/client").Prisma.CardWhereInput = {};
+  if (params.productId) where.productId = params.productId;
+  if (params.batchNo) where.batchNo = { contains: params.batchNo };
+  if (params.status) where.status = params.status as import("../../generated/prisma/client").CardStatus;
+  if (params.startDate || params.endDate) {
+    where.createdAt = {};
+    if (params.startDate) where.createdAt.gte = new Date(params.startDate);
+    if (params.endDate) {
+      const end = new Date(params.endDate);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt.lte = end;
+    }
+  }
+  const skip = (params.page - 1) * params.pageSize;
+  return Promise.all([
+    prisma.card.findMany({ where, include: { product: true }, orderBy: [{ id: "desc" }], skip, take: params.pageSize }),
+    prisma.card.count({ where }),
+  ]);
+}
+
+export function deleteCardById(prisma: PrismaClient, id: number) {
+  return prisma.card.deleteMany({
+    where: { id, status: "UNUSED" },
+  });
+}

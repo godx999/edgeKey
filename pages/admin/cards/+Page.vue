@@ -13,9 +13,7 @@
             <h1 class="text-xl font-bold">单条新增</h1>
             <select v-model="singleForm.productId" class="select select-bordered w-full">
               <option value="">请选择商品</option>
-              <option v-for="product in products" :key="product.id" :value="String(product.id)">
-                {{ product.name }}
-              </option>
+              <option v-for="product in products" :key="product.id" :value="String(product.id)">{{ product.name }}</option>
             </select>
             <input v-model="singleForm.batchNo" class="input input-bordered w-full" placeholder="批次号（可选）" />
             <textarea v-model="singleForm.content" class="textarea textarea-bordered w-full" rows="4" placeholder="输入卡密内容"></textarea>
@@ -26,9 +24,7 @@
             <h2 class="text-xl font-bold">批量导入</h2>
             <select v-model="importForm.productId" class="select select-bordered w-full">
               <option value="">请选择商品</option>
-              <option v-for="product in products" :key="product.id" :value="String(product.id)">
-                {{ product.name }}
-              </option>
+              <option v-for="product in products" :key="product.id" :value="String(product.id)">{{ product.name }}</option>
             </select>
             <input v-model="importForm.batchNo" class="input input-bordered w-full" placeholder="批次号（可选）" />
             <textarea v-model="importForm.lines" class="textarea textarea-bordered w-full" rows="8" placeholder="每行一条卡密"></textarea>
@@ -45,109 +41,154 @@
     </section>
 
     <section class="card bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h2 class="mb-4 text-xl font-bold">库存列表</h2>
-        <div class="overflow-x-auto">
-          <table class="table table-zebra">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>商品</th>
-                <th>卡密预览</th>
-                <th>批次</th>
-                <th>状态</th>
-                <th>订单</th>
-                <th>创建时间</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!cardList.length">
-                <td colspan="7" class="text-center text-base-content/60">当前还没有库存卡密。</td>
-              </tr>
-              <tr v-for="card in cardList" :key="card.id">
-                <td>{{ card.id }}</td>
-                <td>{{ card.productName }}</td>
-                <td><code>{{ card.contentPreview }}</code></td>
-                <td>{{ card.batchNo || '-' }}</td>
-                <td>
-                  <span class="badge" :class="getStatusBadgeClass(card.status)">
-                    {{ getStatusLabel(card.status) }}
-                  </span>
-                </td>
-                <td>{{ card.orderId || '-' }}</td>
-                <td>{{ formatDate(card.createdAt) }}</td>
-              </tr>
-            </tbody>
-          </table>
+      <div class="card-body space-y-4">
+        <h2 class="text-xl font-bold">库存列表</h2>
+
+        <!-- 搜索筛选 -->
+        <div class="flex flex-wrap gap-3 items-center">
+          <select v-model="filter.productId" class="select select-sm select-bordered w-46">
+            <option value="">全部商品</option>
+            <option v-for="product in products" :key="product.id" :value="String(product.id)">{{ product.name }}</option>
+          </select>
+          <select v-model="filter.status" class="select select-sm select-bordered w-auto">
+            <option value="">全部状态</option>
+            <option value="UNUSED">未售出</option>
+            <option value="SOLD">已售出</option>
+            <option value="LOCKED">锁定中</option>
+            <option value="INVALID">已失效</option>
+          </select>
+          <input v-model="filter.batchNo" class="input input-sm input-bordered w-52" placeholder="批次号" />
+          <input v-model="filter.startDate" type="date" class="input input-sm input-bordered w-46" />
+          <input v-model="filter.endDate" type="date" class="input input-sm input-bordered w-46" />
         </div>
+        <div class="flex gap-3">
+          <button class="btn btn-sm btn-primary" @click="handleSearch">搜索</button>
+          <button class="btn btn-sm btn-ghost" @click="handleReset">重置</button>
+        </div>
+
+        <DataTable
+          :columns="columns"
+          :rows="cardPage.items"
+          :total="cardPage.total"
+          :page="currentPage"
+          :page-size="PAGE_SIZE"
+          @update:page="handlePageChange"
+        >
+          <template #contentPreview="{ value }">
+            <code>{{ value }}</code>
+          </template>
+          <template #status="{ value }">
+            <span class="badge" :class="getStatusBadgeClass(value)">{{ getStatusLabel(value) }}</span>
+          </template>
+          <template #createdAt="{ value }">
+            {{ formatDate(value) }}
+          </template>
+          <template #actions="{ row }">
+            <button
+              v-if="row.status === 'UNUSED'"
+              class="btn btn-xs btn-error btn-outline"
+              @click="handleDeleteCard(row.id)"
+            >删除</button>
+          </template>
+        </DataTable>
       </div>
     </section>
   </section>
 </template>
 
 <script setup lang="ts">
-import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref } from "vue";
 import { useData } from "vike-vue/useData";
+import { normalizeTelefuncError } from "../../../lib/app-error";
 import { onCreateCard } from "./createCard.telefunc";
 import { onDeleteUnusedCards } from "./deleteUnusedCards.telefunc";
 import { onImportCards } from "./importCards.telefunc";
+import { onQueryCards } from "./queryCards.telefunc";
+import { onDeleteCard } from "./deleteCard.telefunc";
+import DataTable from "../../../components/DataTable.vue";
 import type { Data } from "./+data";
 
 const { cards, products, overview } = useData<Data>();
 
-const cardList = ref([...cards]);
+const PAGE_SIZE = 20;
+const currentPage = ref(1);
+const cardPage = ref({ items: [...cards], total: cards.length });
+
 const message = ref("");
 const errorMessage = ref("");
 
-const singleForm = reactive({
-  productId: "",
-  content: "",
-  batchNo: "",
-});
+const filter = reactive({ productId: "", batchNo: "", status: "", startDate: "", endDate: "" });
 
-const importForm = reactive({
-  productId: "",
-  lines: "",
-  batchNo: "",
-});
+const singleForm = reactive({ productId: "", content: "", batchNo: "" });
+const importForm = reactive({ productId: "", lines: "", batchNo: "" });
+
+const columns = [
+  { key: "id", label: "ID" },
+  { key: "productName", label: "商品" },
+  { key: "contentPreview", label: "卡密预览" },
+  { key: "batchNo", label: "批次" },
+  { key: "status", label: "状态" },
+  { key: "orderId", label: "订单" },
+  { key: "createdAt", label: "创建时间" },
+  { key: "actions", label: "操作" },
+];
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString();
 }
 
 function getStatusLabel(status: string) {
-  return {
-    UNUSED: "未售出",
-    SOLD: "已售出",
-    LOCKED: "锁定中",
-    INVALID: "已失效"
-  }[status] || status;
+  return ({ UNUSED: "未售出", SOLD: "已售出", LOCKED: "锁定中", INVALID: "已失效" } as Record<string, string>)[status] || status;
 }
 
 function getStatusBadgeClass(status: string) {
-  return {
-    UNUSED: "badge-success",
-    SOLD: "badge-ghost",
-    LOCKED: "badge-warning",
-    INVALID: "badge-error"
-  }[status] || "badge-ghost";
+  return ({ UNUSED: "badge-success", SOLD: "badge-ghost", LOCKED: "badge-warning", INVALID: "badge-error" } as Record<string, string>)[status] || "badge-ghost";
+}
+
+async function fetchPage(page: number) {
+  const result = await onQueryCards({
+    productId: filter.productId ? Number(filter.productId) : undefined,
+    batchNo: filter.batchNo || undefined,
+    status: filter.status || undefined,
+    startDate: filter.startDate || undefined,
+    endDate: filter.endDate || undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+  cardPage.value = result;
+  currentPage.value = page;
+}
+
+async function handleSearch() {
+  await fetchPage(1);
+}
+
+async function handleReset() {
+  filter.productId = "";
+  filter.batchNo = "";
+  filter.status = "";
+  filter.startDate = "";
+  filter.endDate = "";
+  await fetchPage(1);
+}
+
+async function handlePageChange(page: number) {
+  await fetchPage(page);
 }
 
 async function handleCreateCard() {
   message.value = "";
   errorMessage.value = "";
-
   try {
-    const result = await onCreateCard({
+    await onCreateCard({
       productId: Number(singleForm.productId),
       content: singleForm.content,
       batchNo: singleForm.batchNo,
     });
-    cardList.value.unshift(result);
     singleForm.content = "";
     singleForm.batchNo = "";
-    message.value = `已新增卡密 #${result.id}`;
+    message.value = "新增成功";
+    await fetchPage(1);
   } catch (error) {
     errorMessage.value = normalizeTelefuncError(error, "新增失败");
   }
@@ -156,7 +197,6 @@ async function handleCreateCard() {
 async function handleImportCards() {
   message.value = "";
   errorMessage.value = "";
-
   try {
     const result = await onImportCards({
       productId: Number(importForm.productId),
@@ -165,22 +205,33 @@ async function handleImportCards() {
     });
     importForm.lines = "";
     importForm.batchNo = "";
-    message.value = `已导入 ${result.count} 条卡密，请刷新页面查看最新列表。`;
+    message.value = `已导入 ${result.count} 条卡密`;
+    await fetchPage(1);
   } catch (error) {
     errorMessage.value = normalizeTelefuncError(error, "导入失败");
+  }
+}
+
+async function handleDeleteCard(id: number) {
+  if (!confirm(`确认删除卡密 #${id}？此操作不可撤销。`)) return;
+  message.value = "";
+  errorMessage.value = "";
+  try {
+    await onDeleteCard({ id });
+    message.value = `已删除卡密 #${id}`;
+    await fetchPage(currentPage.value);
+  } catch (error) {
+    errorMessage.value = normalizeTelefuncError(error, "删除失败");
   }
 }
 
 async function handleDeleteUnused() {
   message.value = "";
   errorMessage.value = "";
-
   try {
-    const result = await onDeleteUnusedCards({
-      productId: Number(importForm.productId),
-    });
-    cardList.value = cardList.value.filter((card) => !(card.productId === Number(importForm.productId) && card.status === 'UNUSED'));
-    message.value = `已删除 ${result.count} 条未售卡密。`;
+    const result = await onDeleteUnusedCards({ productId: Number(importForm.productId) });
+    message.value = `已删除 ${result.count} 条未售卡密`;
+    await fetchPage(currentPage.value);
   } catch (error) {
     errorMessage.value = normalizeTelefuncError(error, "删除失败");
   }
