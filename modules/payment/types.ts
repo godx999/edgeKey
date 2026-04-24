@@ -1,4 +1,4 @@
-export type PaymentProvider = "BEPUSDT" | "EPAY";
+export type PaymentProvider = "BEPUSDT" | "EPAY" | "ALIPAY";
 
 export interface PaymentMethodItem {
   provider: PaymentProvider;
@@ -18,4 +18,7 @@ export interface PaymentConfigValue {
   key?: string;
   notifyUrl?: string;
   returnUrl?: string;
+  alipayAppId?: string;
+  alipayPrivateKey?: string;
+  alipayPublicKey?: string;
 }

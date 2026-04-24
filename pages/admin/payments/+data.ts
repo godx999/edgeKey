@@ -11,6 +11,7 @@ export async function data(pageContext: {
       configs: {
         BEPUSDT: null,
         EPAY: null,
+        ALIPAY: null,
       },
     };
   }

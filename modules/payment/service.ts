@@ -11,6 +11,7 @@ import type { PaymentMethodItem, PaymentProvider } from "./types";
 import type { PaymentConfigValue } from "./types";
 import { createBepusdtAdapter } from "./bepusdt";
 import { createEpayAdapter } from "./epay";
+import { createAlipayAdapter } from "./alipay";
 import { deliverOrder } from "../delivery/service";
 import { findOrderRecord, updateOrderPayment } from "../order/repository";
 
@@ -33,6 +34,17 @@ const defaultPaymentConfigs: Record<PaymentProvider, PaymentConfigValue> = {
     pid: "",
     key: "",
     notifyUrl: "/api/payments/epay/notify",
+    returnUrl: "/order/{orderNo}?token={token}",
+  },
+  ALIPAY: {
+    provider: "ALIPAY",
+    name: "支付宝",
+    isEnabled: false,
+    baseUrl: "",
+    alipayAppId: "",
+    alipayPrivateKey: "",
+    alipayPublicKey: "",
+    notifyUrl: "/api/payments/alipay/notify",
     returnUrl: "/order/{orderNo}?token={token}",
   },
 };
@@ -105,6 +117,9 @@ export async function savePaymentConfig(input: PaymentConfigValue) {
     key: input.key?.trim() || "",
     notifyUrl: input.notifyUrl?.trim() || "",
     returnUrl: input.returnUrl?.trim() || "",
+    alipayAppId: input.alipayAppId?.trim() || "",
+    alipayPrivateKey: input.alipayPrivateKey?.trim() || "",
+    alipayPublicKey: input.alipayPublicKey?.trim() || "",
   };
 
   const record = await upsertPaymentConfigRecord(prisma, input.provider, {
@@ -133,7 +148,9 @@ function createProviderAdapter(config: PaymentConfigValue) {
   if (config.provider === "BEPUSDT") {
     return createBepusdtAdapter(config);
   }
-
+  if (config.provider === "ALIPAY") {
+    return createAlipayAdapter(config);
+  }
   return createEpayAdapter(config);
 }
 

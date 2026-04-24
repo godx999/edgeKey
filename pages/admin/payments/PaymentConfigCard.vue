@@ -23,7 +23,7 @@
         </label>
       </div>
 
-      <component :is="formMap[provider]" v-model="extraFields" />
+      <component :is="formMap[provider]" v-model="(extraFields as unknown as Record<string, string>)" />
 
       <div class="grid gap-4 md:grid-cols-2">
         <label class="flex flex-col gap-1.5">
@@ -53,9 +53,10 @@ import { normalizeTelefuncError } from "../../../lib/app-error";
 import { onSavePaymentConfig } from "./savePaymentConfig.telefunc";
 import BEpusdtForm from "./forms/BEpusdtForm.vue";
 import EpayForm from "./forms/EpayForm.vue";
+import AlipayForm from "./forms/AlipayForm.vue";
 import type { PaymentProvider } from "../../../modules/payment/types";
 
-const formMap = { BEPUSDT: BEpusdtForm, EPAY: EpayForm };
+const formMap = { BEPUSDT: BEpusdtForm, EPAY: EpayForm, ALIPAY: AlipayForm };
 
 const emit = defineEmits<{ saved: [value: typeof props.initialValue] }>();
 
@@ -87,7 +88,9 @@ const form = reactive({
 const extraFields = reactive(
   props.provider === 'BEPUSDT'
     ? { appId: props.initialValue?.appId ?? '', appSecret: props.initialValue?.appSecret ?? '' }
-    : { pid: props.initialValue?.pid ?? '', key: props.initialValue?.key ?? '' }
+    : props.provider === 'ALIPAY'
+      ? { alipayAppId: (props.initialValue as any)?.alipayAppId ?? '', alipayPrivateKey: (props.initialValue as any)?.alipayPrivateKey ?? '', alipayPublicKey: (props.initialValue as any)?.alipayPublicKey ?? '' }
+      : { pid: props.initialValue?.pid ?? '', key: props.initialValue?.key ?? '' }
 );
 
 const saving = ref(false);
@@ -108,6 +111,10 @@ async function handleSave() {
     if (props.provider === 'BEPUSDT') {
       (extraFields as any).appId = result.appId ?? '';
       (extraFields as any).appSecret = result.appSecret ?? '';
+    } else if (props.provider === 'ALIPAY') {
+      (extraFields as any).alipayAppId = (result as any).alipayAppId ?? '';
+      (extraFields as any).alipayPrivateKey = (result as any).alipayPrivateKey ?? '';
+      (extraFields as any).alipayPublicKey = (result as any).alipayPublicKey ?? '';
     } else {
       (extraFields as any).pid = result.pid ?? '';
       (extraFields as any).key = result.key ?? '';

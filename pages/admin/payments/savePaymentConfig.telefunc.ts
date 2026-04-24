@@ -13,6 +13,9 @@ export async function onSavePaymentConfig(input: {
   key?: string;
   notifyUrl?: string;
   returnUrl?: string;
+  alipayAppId?: string;
+  alipayPrivateKey?: string;
+  alipayPublicKey?: string;
 }) {
   assertAdminAccess();
   return savePaymentConfig(input);
