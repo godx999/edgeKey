@@ -13,8 +13,10 @@ export async function data(pageContext: {
     };
   }
 
+  const products = await getAdminProducts(pageContext.prisma);
   return {
-    products: await getAdminProducts(pageContext.prisma),
+    products,
+    total: products.length,
     categories: await getAdminCategories(pageContext.prisma),
   };
 }

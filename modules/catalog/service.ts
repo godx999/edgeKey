@@ -51,13 +51,19 @@ export async function saveCategory(input: {
     throw badRequestError("分类 slug 不能为空", "CATEGORY_SLUG_REQUIRED");
   }
 
-  const record = await upsertCategoryRecord(prisma, {
-    id: input.id,
-    name,
-    slug,
-    description: input.description?.trim() || null,
-    sort: Number.isFinite(input.sort) ? Number(input.sort) : 0,
-  });
+  let record;
+  try {
+    record = await upsertCategoryRecord(prisma, {
+      id: input.id,
+      name,
+      slug,
+      description: input.description?.trim() || null,
+      sort: Number.isFinite(input.sort) ? Number(input.sort) : 0,
+    });
+  } catch (e: any) {
+    if (e?.code === "P2002") throw conflictError("分类名称或 Slug 已存在，请换一个", "CATEGORY_SLUG_CONFLICT");
+    throw e;
+  }
 
   await logAdminOperation(
     {

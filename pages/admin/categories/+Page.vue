@@ -1,12 +1,9 @@
 <template>
   <section class="card bg-base-100 shadow-sm">
     <div class="card-body space-y-4">
-      <div class="flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
-        <div>
-          <h1 class="text-2xl font-bold">分类管理</h1>
-          <p class="text-sm text-base-content/70">管理前台商品分类、排序和启用状态。</p>
-        </div>
-        <AppButton variant="primary" size="sm" @click="resetForm">新增分类</AppButton>
+      <div>
+        <h1 class="text-2xl font-bold">分类管理</h1>
+        <p class="text-sm text-base-content/70">管理前台商品分类、排序和启用状态。</p>
       </div>
 
       <div class="grid gap-6 lg:grid-cols-[1.2fr_2fr]">
@@ -37,45 +34,32 @@
           </div>
         </section>
 
-        <section class="overflow-x-auto">
-          <table class="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>名称</th>
-                <th>Slug</th>
-                <th>排序</th>
-                <th>状态</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!categoryList.length">
-                <td colspan="6" class="text-center text-base-content/60">当前还没有分类，先创建第一条。</td>
-              </tr>
-              <tr v-for="category in categoryList" :key="category.id">
-                <td>{{ category.id }}</td>
-                <td>
-                  <div class="font-medium">{{ category.name }}</div>
-                  <div v-if="category.description" class="text-xs text-base-content/60">{{ category.description }}</div>
-                </td>
-                <td>{{ category.slug }}</td>
-                <td>{{ category.sort }}</td>
-                <td>
-                  <StatusTag :type="category.status === 'ACTIVE' ? 'success' : 'default'">
-                    {{ category.status === 'ACTIVE' ? '启用' : '停用' }}
-                  </StatusTag>
-                </td>
-                <td>
-                  <div class="flex gap-2">
-                    <AppButton size="xs" variant="outline" @click="startEdit(category)">编辑</AppButton>
-                    <AppButton size="xs" variant="outline" @click="handleToggle(category)">{{ category.status === 'ACTIVE' ? '停用' : '启用' }}</AppButton>
-                    <AppButton size="xs" variant="danger" @click="handleDelete(category)">删除</AppButton>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <section>
+          <DataTable
+            :columns="columns"
+            :rows="categoryList"
+            :total="categoryList.length"
+            :page="1"
+            :page-size="categoryList.length || 1"
+            empty-text="当前还没有分类，先创建第一条。"
+          >
+            <template #name="{ row }">
+              <div class="font-medium">{{ row.name }}</div>
+              <div v-if="row.description" class="text-xs text-base-content/60">{{ row.description }}</div>
+            </template>
+            <template #status="{ row }">
+              <StatusTag :type="row.status === 'ACTIVE' ? 'success' : 'default'">
+                {{ row.status === 'ACTIVE' ? '启用' : '停用' }}
+              </StatusTag>
+            </template>
+            <template #actions="{ row }">
+              <div class="flex gap-2">
+                <AppButton size="xs" variant="outline" @click="startEdit(row)">编辑</AppButton>
+                <AppButton size="xs" variant="outline" @click="handleToggle(row)">{{ row.status === 'ACTIVE' ? '停用' : '启用' }}</AppButton>
+                <AppButton size="xs" variant="danger" @click="handleDelete(row)">删除</AppButton>
+              </div>
+            </template>
+          </DataTable>
         </section>
       </div>
     </div>
@@ -88,6 +72,7 @@ import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref, useTemplateRef } from "vue";
 import ConfirmDialog from "../../../components/ConfirmDialog.vue";
 import AppButton from "../../../components/AppButton.vue";
+import DataTable from "../../../components/DataTable.vue";
 import { useData } from "vike-vue/useData";
 import StatusTag from "../../../components/StatusTag.vue";
 import { onDeleteCategory } from "./deleteCategory.telefunc";
@@ -96,6 +81,15 @@ import { onToggleCategory } from "./toggleCategory.telefunc";
 import type { Data } from "./+data";
 
 const { categories } = useData<Data>();
+
+const columns = [
+  { key: "id", label: "ID" },
+  { key: "name", label: "名称" },
+  { key: "slug", label: "Slug" },
+  { key: "sort", label: "排序" },
+  { key: "status", label: "状态" },
+  { key: "actions", label: "操作" },
+];
 
 const categoryList = ref([...categories]);
 const saving = ref(false);

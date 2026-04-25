@@ -95,6 +95,22 @@ export function toAppError(error: unknown, fallback?: AppErrorOptions) {
     return error;
   }
 
+  // Prisma 唯一约束冲突
+  if (error instanceof Error && (error as any).code === "P2002") {
+    return conflictError("数据已存在，请检查是否重复", "UNIQUE_CONSTRAINT");
+  }
+
+  // Telefunc 重新包装错误后 instanceof 失效，通过 name 识别
+  if (error instanceof Error && error.name === "AppError") {
+    const e = error as AppError;
+    return new AppError(e.message, {
+      code: e.code,
+      statusCode: e.statusCode,
+      expose: e.expose,
+      cause: e.cause,
+    });
+  }
+
   const abortValue = getTelefuncAbortValue(error);
   if (abortValue?.message && typeof abortValue.message === "string") {
     return new AppError(abortValue.message, {
@@ -117,6 +133,7 @@ export function toAppError(error: unknown, fallback?: AppErrorOptions) {
 }
 
 export function normalizeTelefuncError(error: unknown, fallbackMessage: string) {
+
   const abortValue = getTelefuncAbortValue(error);
   if (abortValue?.message && typeof abortValue.message === "string") {
     return abortValue.message;

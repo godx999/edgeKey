@@ -7,7 +7,7 @@
       </div>
     </div>
 
-    <div role="tablist" class="tabs tabs-box">
+    <div role="tablist" class="tabs tabs-border">
       <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'stats' }" @click="activeTab = 'stats'">统计</a>
       <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'config' }" @click="activeTab = 'config'">配置</a>
       <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'list' }" @click="activeTab = 'list'">日志</a>

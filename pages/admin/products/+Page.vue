@@ -9,47 +9,45 @@
         <AppButton href="/admin/products/new" variant="primary" size="sm">新建商品</AppButton>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="table table-zebra w-full">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>商品</th>
-              <th>分类</th>
-              <th>价格</th>
-              <th>限购</th>
-              <th>状态</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="!productList.length">
-              <td colspan="7" class="text-center text-base-content/60">当前还没有商品，请先创建第一个商品。</td>
-            </tr>
-            <tr v-for="product in productList" :key="product.id">
-              <td>{{ product.id }}</td>
-              <td>
-                <div class="font-medium">{{ product.name }}</div>
-                <div class="text-xs text-base-content/60">{{ product.slug }}</div>
-              </td>
-              <td>{{ product.categoryName || "未分类" }}</td>
-              <td>{{ formatCents(product.price) }}</td>
-              <td>{{ product.minBuy }} - {{ product.maxBuy }}</td>
-              <td>
-                <StatusTag :type="product.status === 'ACTIVE' ? 'success' : 'default'">
-                  {{ product.status === 'ACTIVE' ? '上架' : '下架' }}
-                </StatusTag>
-              </td>
-              <td>
-                <div class="flex gap-2">
-                  <AppButton :href="`/admin/products/${product.id}/edit`" variant="outline" size="xs">编辑</AppButton>
-                  <AppButton size="xs" variant="danger" @click="handleDelete(product)">删除</AppButton>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="flex flex-wrap gap-3 items-center">
+        <input v-model="filter.name" class="input input-sm input-bordered w-48" placeholder="商品名称" />
+        <select v-model="filter.status" class="select select-sm select-bordered w-32">
+          <option value="">全部状态</option>
+          <option value="ACTIVE">上架</option>
+          <option value="INACTIVE">下架</option><option value="DRAFT">草稿</option>
+        </select>
+        <AppButton size="sm" variant="primary" @click="handleSearch">搜索</AppButton>
+        <AppButton size="sm" variant="ghost" @click="handleReset">重置</AppButton>
       </div>
+
+      <DataTable
+        :columns="columns"
+        :rows="pageData.items"
+        :total="pageData.total"
+        :page="currentPage"
+        :page-size="PAGE_SIZE"
+        empty-text="当前还没有商品，请先创建第一个商品。"
+        @update:page="fetchPage"
+      >
+        <template #name="{ row }">
+          <div class="font-medium">{{ row.name }}</div>
+          <div class="text-xs text-base-content/60">{{ row.slug }}</div>
+        </template>
+        <template #categoryName="{ value }">{{ value || '未分类' }}</template>
+        <template #price="{ value }">{{ formatCents(value) }}</template>
+        <template #buy="{ row }">{{ row.minBuy }} - {{ row.maxBuy }}</template>
+        <template #status="{ row }">
+          <StatusTag :type="row.status === 'ACTIVE' ? 'success' : 'default'">
+            {{ row.status === 'ACTIVE' ? '上架' : '下架' }}
+          </StatusTag>
+        </template>
+        <template #actions="{ row }">
+          <div class="flex gap-2">
+            <AppButton :href="`/admin/products/${row.id}/edit`" variant="outline" size="xs">编辑</AppButton>
+            <AppButton size="xs" variant="danger" @click="handleDelete(row)">删除</AppButton>
+          </div>
+        </template>
+      </DataTable>
     </div>
   </section>
   <ConfirmDialog ref="confirmRef" />
@@ -57,27 +55,58 @@
 
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../../lib/app-error";
-import { ref, useTemplateRef } from "vue";
+import { ref, reactive, useTemplateRef } from "vue";
 import AppButton from "../../../components/AppButton.vue";
 import ConfirmDialog from "../../../components/ConfirmDialog.vue";
+import DataTable from "../../../components/DataTable.vue";
+import StatusTag from "../../../components/StatusTag.vue";
 import { useData } from "vike-vue/useData";
 import { formatCents } from "../../../lib/utils/money";
-import StatusTag from "../../../components/StatusTag.vue";
 import { onDeleteProduct } from "./deleteProduct.telefunc";
+import { onQueryProducts } from "./queryProducts.telefunc";
 import type { Data } from "./+data";
 
-const { products } = useData<Data>();
-const productList = ref([...products]);
+const { products, total } = useData<Data>();
+
+const PAGE_SIZE = 20;
+const currentPage = ref(1);
+const pageData = ref({ items: [...products], total });
+const filter = reactive({ name: "", status: "" });
 const confirmRef = useTemplateRef<InstanceType<typeof ConfirmDialog>>("confirmRef");
 
-async function handleDelete(product: (typeof products)[number]) {
-  if (!await confirmRef.value?.confirm({ title: "删除商品", message: `确认删除商品"${product.name}"吗？`, confirmText: "删除", danger: true })) {
-    return;
-  }
+const columns = [
+  { key: "id", label: "ID" },
+  { key: "name", label: "商品" },
+  { key: "categoryName", label: "分类" },
+  { key: "price", label: "价格" },
+  { key: "buy", label: "限购" },
+  { key: "status", label: "状态" },
+  { key: "actions", label: "操作" },
+];
 
+async function fetchPage(page: number) {
+  pageData.value = await onQueryProducts({
+    name: filter.name || undefined,
+    status: filter.status || undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  });
+  currentPage.value = page;
+}
+
+async function handleSearch() { await fetchPage(1); }
+
+async function handleReset() {
+  filter.name = "";
+  filter.status = "";
+  await fetchPage(1);
+}
+
+async function handleDelete(product: (typeof products)[number]) {
+  if (!await confirmRef.value?.confirm({ title: "删除商品", message: `确认删除商品"${product.name}"吗？`, confirmText: "删除", danger: true })) return;
   try {
     await onDeleteProduct({ id: product.id });
-    productList.value = productList.value.filter((item) => item.id !== product.id);
+    await fetchPage(currentPage.value);
   } catch (error) {
     await confirmRef.value?.alert({ title: "错误", message: normalizeTelefuncError(error, "删除失败") });
   }
