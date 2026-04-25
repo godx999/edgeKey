@@ -212,11 +212,11 @@
             </label>
             <label class="flex flex-col gap-1.5">
               <span class="label-text font-medium">API Key</span>
-              <input v-model="configForm.apiKey" class="input input-bordered w-full" />
+              <SecretInput v-model="configForm.apiKey" />
             </label>
             <label class="flex flex-col gap-1.5">
               <span class="label-text font-medium">Secret Key</span>
-              <input v-model="configForm.secretKey" class="input input-bordered w-full" :disabled="configForm.apiProvider !== 'MAILJET'" :placeholder="configForm.apiProvider === 'MAILJET' ? 'Mailjet Secret Key' : 'Brevo 不需要该字段'" />
+              <SecretInput v-model="configForm.secretKey" :disabled="configForm.apiProvider !== 'MAILJET'" :placeholder="configForm.apiProvider === 'MAILJET' ? 'Mailjet Secret Key' : 'Brevo 不需要该字段'" />
             </label>
             <label class="flex flex-col gap-1.5">
               <span class="label-text font-medium">超时(ms)</span>
@@ -253,7 +253,7 @@
               </label>
               <label class="flex flex-col gap-1.5">
                 <span class="label-text font-medium">SMTP 密码</span>
-                <input v-model="configForm.smtpPassword" class="input input-bordered w-full" />
+                <SecretInput v-model="configForm.smtpPassword" />
               </label><label class="flex flex-col gap-1.5">
                 <span class="label-text font-medium">认证方式</span>
                 <select v-model="configForm.smtpAuthType" class="select select-bordered w-full">
@@ -480,6 +480,7 @@
 </template>
 
 <script setup lang="ts">
+import SecretInput from "../../../components/SecretInput.vue";
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref, computed } from "vue";
 import { useData } from "vike-vue/useData";

@@ -46,7 +46,7 @@ export function getPaymentProviderLabel(provider: string) {
     case "EPAY":
       return "易支付";
     case "BEPUSDT":
-      return "USDT";
+      return "BEpusdt";
     default:
       return provider;
   }

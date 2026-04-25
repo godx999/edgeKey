@@ -19,7 +19,7 @@ import { notifyOrderPaid as _notifyOrderPaid } from "../email/service";
 const defaultPaymentConfigs: Record<PaymentProvider, PaymentConfigValue> = {
   BEPUSDT: {
     provider: "BEPUSDT",
-    name: "USDT",
+    name: "BEpusdt",
     isEnabled: false,
     baseUrl: "",
     appId: "",
@@ -41,7 +41,7 @@ const defaultPaymentConfigs: Record<PaymentProvider, PaymentConfigValue> = {
     provider: "ALIPAY",
     name: "支付宝",
     isEnabled: false,
-    baseUrl: "",
+    baseUrl: "https://openapi.alipay.com",
     alipayAppId: "",
     alipayPrivateKey: "",
     alipayPublicKey: "",

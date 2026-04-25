@@ -18,8 +18,8 @@
           <input v-model="form.name" class="input input-bordered w-full" />
         </label>
         <label class="flex flex-col gap-1.5">
-          <span class="label-text font-medium">网关地址</span>
-          <input v-model="form.baseUrl" class="input input-bordered w-full" placeholder="https://example.com" />
+          <span class="label-text font-medium">网关地址(仅需填写主域名，系统处理接口)</span>
+          <input v-model="form.baseUrl" class="input input-bordered w-full" placeholder="https://pay.example.com (末尾请勿加斜杠)" />
         </label>
       </div>
 
@@ -67,7 +67,7 @@ const props = defineProps<{
 }>();
 
 const form = reactive({
-  name: props.initialValue?.name ?? (props.provider === 'BEPUSDT' ? 'USDT' : '聚合支付'),
+  name: props.initialValue?.name ?? (props.provider === 'BEPUSDT' ? 'BEpusdt' : '聚合支付'),
   isEnabled: props.initialValue?.isEnabled ?? false,
   baseUrl: props.initialValue?.baseUrl ?? '',
   notifyUrl: props.initialValue?.notifyUrl ?? '',

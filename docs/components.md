@@ -1,5 +1,24 @@
 # 公共组件文档
 
+## SecretInput
+
+带显示/隐藏切换的密钥输入框，用于密码、API Secret 等敏感字段。
+
+### Props
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `modelValue` | `string` | 输入值（v-model） |
+
+支持透传所有原生 `input` 属性（如 `placeholder`、`disabled` 等）。
+
+### 基本用法
+
+```components/SecretInput.vue#L1-3
+<SecretInput v-model="form.appSecret" placeholder="请输入 App Secret" />
+```
+
+
 ## DataTable
 
 通用带翻页的表格组件，基于 daisyUI `table` 样式。

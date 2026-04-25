@@ -11,7 +11,7 @@
           <option value="">全部支付方式</option>
           <option value="EPAY">易支付</option>
           <option value="ALIPAY">支付宝</option>
-          <option value="BEPUSDT">USDT</option>
+          <option value="BEPUSDT">BEpusdt</option>
         </select>
         <select v-model="filter.status" class="select select-sm select-bordered w-32">
           <option value="">全部状态</option>

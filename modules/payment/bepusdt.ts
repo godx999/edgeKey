@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { badRequestError, externalServiceError } from "../../lib/app-error";
+import { logger } from "../../lib/logger";
 import type { PaymentProviderAdapter } from "./provider";
 
 interface BepusdtConfig {
@@ -40,18 +41,8 @@ export function createBepusdtAdapter(config: BepusdtConfig): PaymentProviderAdap
       };
 
       const signature = signBepusdt(payload, config.appSecret);
-      const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/api/v1/order/create-transaction`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          ...payload,
-          signature,
-        }),
-      });
 
-      const json = (await response.json()) as {
+      type BepusdtResponse = {
         status_code?: number;
         message?: string;
         data?: {
@@ -60,7 +51,23 @@ export function createBepusdtAdapter(config: BepusdtConfig): PaymentProviderAdap
         };
       };
 
-      if (!response.ok || json.status_code !== 200 || !json.data?.payment_url) {
+      let json: BepusdtResponse;
+      try {
+        const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/api/v1/order/create-order`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ...payload, signature }),
+        });
+        const text = (await response.text()).replace(/^\uFEFF/, "");
+        json = JSON.parse(text) as BepusdtResponse;
+      } catch (err) {
+        throw externalServiceError(
+          `BEpusdt 请求失败: ${err instanceof Error ? err.message : String(err)}`,
+          "BEPUSDT_INVALID_RESPONSE"
+        );
+      }
+
+      if (json.status_code !== 200 || !json.data?.payment_url) {
         throw externalServiceError(json.message || "BEpusdt 创建支付失败", "BEPUSDT_CREATE_PAYMENT_FAILED");
       }
 
@@ -80,11 +87,13 @@ export function createBepusdtAdapter(config: BepusdtConfig): PaymentProviderAdap
         };
       }
 
+      logger.debug("bepusdt.verify_notify", { payload });
       const signature = payload.signature || "";
       const unsignedPayload = { ...payload };
       delete unsignedPayload.signature;
       const expected = signBepusdt(unsignedPayload, config.appSecret);
-      const status = payload.status === "2" ? "PAID" : payload.status === "3" ? "FAILED" : "PENDING";
+      const statusVal = String(payload.status);
+      const status = statusVal === "2" ? "PAID" : statusVal === "3" ? "FAILED" : "PENDING";
 
       return {
         isValid: signature === expected,
