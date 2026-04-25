@@ -29,8 +29,10 @@
         <div>
           <div class="breadcrumbs text-sm text-base-content/60 mt-0.5">
             <ul>
-              <li>首页</li>
-              <li v-if="currentPageName">{{ currentPageName }}</li>
+              <li><a href="/admin">Home</a></li>
+              <li v-if="breadcrumbs.length > 0"><a :href="breadcrumbs[0].href">{{ breadcrumbs[0].name }}</a>
+              </li>
+              <li v-if="breadcrumbs.length > 1">{{ breadcrumbs[1].name }}</li>
             </ul>
           </div>
         </div>
@@ -132,19 +134,32 @@ const isAdminUser = computed(() => pageContext.session?.user?.role === "admin");
 const needsLogin = computed(() => !isLoginPage.value && !isAdminUser.value);
 const siteLogo = computed(() => pageContext.site?.logo || logoUrl);
 
-const currentPageName = computed(() => {
+type Crumb = { name: string; href?: string };
+
+const BREADCRUMB_ROUTES: { pattern: string; crumbs: Crumb[] }[] = [
+  { pattern: "/admin/products/new",      crumbs: [{ name: "商品管理", href: "/admin/products" }, { name: "新建商品" }] },
+  { pattern: "/admin/products/:id/edit", crumbs: [{ name: "商品管理", href: "/admin/products" }, { name: "编辑商品" }] },
+  { pattern: "/admin/products",          crumbs: [{ name: "商品管理" }] },
+  { pattern: "/admin/orders/:id",        crumbs: [{ name: "订单管理", href: "/admin/orders" }, { name: "订单详情" }] },
+  { pattern: "/admin/orders",            crumbs: [{ name: "订单管理" }] },
+  { pattern: "/admin/categories",        crumbs: [{ name: "分类管理" }] },
+  { pattern: "/admin/cards",             crumbs: [{ name: "卡密管理" }] },
+  { pattern: "/admin/payments",          crumbs: [{ name: "支付配置" }] },
+  { pattern: "/admin/email",             crumbs: [{ name: "邮件管理" }] },
+  { pattern: "/admin/settings",          crumbs: [{ name: "站点设置" }] },
+  { pattern: "/admin/security",          crumbs: [{ name: "安全配置" }] },
+  { pattern: "/admin/profile",           crumbs: [{ name: "个人资料" }] },
+];
+
+function matchRoute(pattern: string, path: string) {
+  const re = new RegExp("^" + pattern.replace(/:[^/]+/g, "[^/]+") + "(/.*)?$");
+  return re.test(path);
+}
+
+const breadcrumbs = computed((): Crumb[] => {
   const path = currentPath.value;
-  if (path === "/admin") return "仪表盘";
-  if (path.startsWith("/admin/categories")) return "分类管理";
-  if (path.startsWith("/admin/products")) return "商品管理";
-  if (path.startsWith("/admin/cards")) return "卡密管理";
-  if (path.startsWith("/admin/orders")) return "订单管理";
-  if (path.startsWith("/admin/payments")) return "支付配置";
-  if (path.startsWith("/admin/email")) return "邮件管理";
-  if (path.startsWith("/admin/settings")) return "站点设置";
-  if (path.startsWith("/admin/security")) return "安全配置";
-  if (path.startsWith("/admin/profile")) return "个人资料";
-  return "";
+  const route = BREADCRUMB_ROUTES.find(r => matchRoute(r.pattern, path));
+  return route ? route.crumbs : [];
 });
 
 onMounted(() => {

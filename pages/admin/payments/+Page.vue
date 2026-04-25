@@ -1,7 +1,7 @@
 <template>
   <section class="space-y-6">
     <div class="alert alert-info">
-      <span>启用支付前，请先前往"站点设置"配置网站地址，否则无法获取支付结果。</span>
+      <span class="text-white">启用支付前，请先前往"站点设置"配置网站地址，否则无法获取支付结果。</span>
     </div>
     <div role="tablist" class="tabs tabs-border">
       <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'BEPUSDT' }" @click="activeTab = 'BEPUSDT'">
