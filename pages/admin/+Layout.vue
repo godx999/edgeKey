@@ -112,12 +112,15 @@
         <div class="p-4 border-t border-base-300 mt-auto space-y-2">
           <AppButton variant="outline" block @click="handleSignOut">退出登录</AppButton>
           <div class="flex items-center justify-between text-xs text-base-content/50 px-2">
-            <button class="hover:text-primary transition-colors" @click="checkUpdate" :title="updateTip" >
-              v{{ appVersion }}-{{ gitHash }}
-            </button>
-            <div class="inline-grid *:[grid-area:1/1]">
-              <div class="animate-ping status" :class="statusColor"></div>
-              <div class="status" :class="statusColor"></div>
+            <a class="cursor-default" target="_blank" href="https://github.com/34892002/edgeKey">edgeKey</a>
+            <div class="">
+              <button class="hover:text-primary transition-colors mr-2" @click="checkUpdate" :title="updateTip" >
+                v{{ appVersion }}-{{ gitHash }}
+              </button>
+              <div class="inline-grid *:[grid-area:1/1]">
+                <div class="animate-ping status" :class="statusColor"></div>
+                <div class="status" :class="statusColor"></div>
+              </div>
             </div>
           </div>
         </div>
