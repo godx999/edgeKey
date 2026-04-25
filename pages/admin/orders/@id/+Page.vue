@@ -57,7 +57,7 @@
     <article class="card bg-base-100 shadow-sm">
       <div class="card-body">
         <h2 class="card-title">支付日志</h2>
-        <div v-if="order.paymentLogs.length" class="space-y-3">
+        <div v-if="order.paymentLogs.length" class="space-y-3 max-h-96 overflow-y-auto">
           <div v-for="log in order.paymentLogs" :key="log.id" class="rounded-box bg-base-200 p-3 text-sm">
             <div class="font-medium">{{ log.eventType }}</div>
             <div class="text-xs text-base-content/60">{{ getVerifyStatusLabel(log.verifyStatus) }} · {{ formatDate(log.createdAt) }}</div>
