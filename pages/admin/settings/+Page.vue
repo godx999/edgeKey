@@ -46,7 +46,8 @@
       <div class="grid gap-4 md:grid-cols-2">
         <label class="flex flex-col gap-1.5">
           <span class="label-text font-medium">客服联系方式</span>
-          <textarea v-model="form.supportContact" class="textarea textarea-bordered w-full" rows="2" placeholder="展示在页脚，支持HTML标签"></textarea>
+          <textarea v-model="form.supportContact" class="textarea textarea-bordered w-full" rows="3" placeholder="格式：文字|链接（无链接直接填文字）&#10;例：联系客服|https://t.me/123&#10;例：邮件支持|mailto:support@example.com"></textarea>
+          <span class="text-xs text-base-content/50">每行一条。纯文字直接填写；需要链接时用 | 分隔，格式：显示文字|链接地址</span>
         </label>
         <label class="flex flex-col gap-1.5">
           <span class="label-text font-medium">页脚文案</span>
