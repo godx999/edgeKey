@@ -477,13 +477,15 @@
       </div>
     </section>
   </section>
+  <ConfirmDialog ref="confirmRef" />
 </template>
 
 <script setup lang="ts">
 import SecretInput from "../../../components/SecretInput.vue";
 import StatusTag from "../../../components/StatusTag.vue";
+import ConfirmDialog from "../../../components/ConfirmDialog.vue";
 import { normalizeTelefuncError } from "../../../lib/app-error";
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, useTemplateRef } from "vue";
 import { useData } from "vike-vue/useData";
 import { onSaveEmailConfig, onDeleteEmailConfig, onSaveEmailPushSettings, onActivateEmailProvider, onClearEmailLogs } from "./saveEmailConfig.telefunc";
 import { onSaveEmailTemplate } from "./saveEmailTemplate.telefunc";
@@ -526,6 +528,7 @@ type MailboxItem = {
 const { configs, templates, logs: initialLogs, metrics, pushSettings: initialPushSettings } = useData<Data>();
 
 const activeTab = ref<"stats" | "config" | "list" | "template">("stats");
+const confirmRef = useTemplateRef<InstanceType<typeof ConfirmDialog>>("confirmRef");
 
 // ===================== Mailbox list =====================
 const logList = reactive([...initialLogs]);
@@ -710,7 +713,7 @@ async function handleClearLogs() {
     logList.splice(0);
     showClearConfirm.value = false;
   } catch (error) {
-    alert(normalizeTelefuncError(error, "清除失败"));
+    await confirmRef.value?.alert({ title: "错误", message: normalizeTelefuncError(error, "清除失败") });
   } finally {
     clearingLogs.value = false;
   }
@@ -827,7 +830,7 @@ async function handleActivate(item: MailboxItem) {
       m.isEnabled = m.id === item.id;
     }
   } catch (error) {
-    alert(normalizeTelefuncError(error, "激活失败"));
+    await confirmRef.value?.alert({ title: "错误", message: normalizeTelefuncError(error, "激活失败") });
   }
 }
 

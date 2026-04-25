@@ -107,12 +107,15 @@
       </div>
     </section>
   </section>
+  <!-- 确认弹窗 -->
+  <ConfirmDialog ref="confirmRef" />
 </template>
 
 <script setup lang="ts">
 import { reactive, ref, useTemplateRef } from "vue";
 import { useData } from "vike-vue/useData";
 import { normalizeTelefuncError } from "../../../lib/app-error";
+import ConfirmDialog from "../../../components/ConfirmDialog.vue";
 import { onCreateCard } from "./createCard.telefunc";
 import { onDeleteUnusedCards } from "./deleteUnusedCards.telefunc";
 import { onImportCards } from "./importCards.telefunc";
@@ -130,6 +133,7 @@ const cardPage = ref({ items: [...cards], total: cards.length });
 
 const addModalRef = useTemplateRef<HTMLDialogElement>("addModalRef");
 const importModalRef = useTemplateRef<HTMLDialogElement>("importModalRef");
+const confirmRef = useTemplateRef<InstanceType<typeof ConfirmDialog>>("confirmRef");
 const message = ref("");
 const errorMessage = ref("");
 
@@ -231,7 +235,8 @@ async function handleImportCards() {
 }
 
 async function handleDeleteCard(id: number) {
-  if (!confirm(`确认删除卡密 #${id}？此操作不可撤销。`)) return;
+  const ok = await confirmRef.value?.confirm({ title: "删除卡密", message: `确认删除卡密 #${id}？此操作不可撤销。`, confirmText: "删除", danger: true });
+  if (!ok) return;
   message.value = "";
   errorMessage.value = "";
   try {
@@ -245,11 +250,12 @@ async function handleDeleteCard(id: number) {
 
 async function handleDeleteUnused() {
   if (!filter.productId) {
-    alert("请先在筛选区选择商品");
+    await confirmRef.value?.alert({ title: "提示", message: "请先在筛选区选择商品" });
     return;
   }
   const product = products.find(p => String(p.id) === filter.productId);
-  if (!confirm(`确认清空「${product?.name ?? filter.productId}」所有未售卡密？此操作不可撤销。`)) return;
+  const ok = await confirmRef.value?.confirm({ title: "清空未售库存", message: `确认清空「${product?.name ?? filter.productId}」所有未售卡密？此操作不可撤销。`, confirmText: "清空", danger: true });
+  if (!ok) return;
   message.value = "";
   errorMessage.value = "";
   try {

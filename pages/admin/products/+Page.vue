@@ -52,11 +52,13 @@
       </div>
     </div>
   </section>
+  <ConfirmDialog ref="confirmRef" />
 </template>
 
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../../lib/app-error";
-import { ref } from "vue";
+import { ref, useTemplateRef } from "vue";
+import ConfirmDialog from "../../../components/ConfirmDialog.vue";
 import { useData } from "vike-vue/useData";
 import { formatCents } from "../../../lib/utils/money";
 import StatusTag from "../../../components/StatusTag.vue";
@@ -65,9 +67,10 @@ import type { Data } from "./+data";
 
 const { products } = useData<Data>();
 const productList = ref([...products]);
+const confirmRef = useTemplateRef<InstanceType<typeof ConfirmDialog>>("confirmRef");
 
 async function handleDelete(product: (typeof products)[number]) {
-  if (!window.confirm(`确认删除商品“${product.name}”吗？`)) {
+  if (!await confirmRef.value?.confirm({ title: "删除商品", message: `确认删除商品"${product.name}"吗？`, confirmText: "删除", danger: true })) {
     return;
   }
 
@@ -75,7 +78,7 @@ async function handleDelete(product: (typeof products)[number]) {
     await onDeleteProduct({ id: product.id });
     productList.value = productList.value.filter((item) => item.id !== product.id);
   } catch (error) {
-    window.alert(normalizeTelefuncError(error, "删除失败"));
+    await confirmRef.value?.alert({ title: "错误", message: normalizeTelefuncError(error, "删除失败") });
   }
 }
 </script>

@@ -1,5 +1,49 @@
 # 公共组件文档
 
+## ConfirmDialog
+
+全局确认/提示弹窗组件，替代原生 `confirm()` 和 `alert()`，基于 daisyUI `<dialog>`。
+
+### 暴露方法
+
+| 方法 | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `confirm(options)` | 见下表 | `Promise<boolean>` | 确认弹窗，有确认+取消按钮 |
+| `alert(options)` | `title`, `message`, `confirmText?` | `Promise<void>` | 提示弹窗，只有"知道了"按钮 |
+
+#### confirm options
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `title` | `string` | — | 弹窗标题 |
+| `message` | `string` | — | 弹窗内容 |
+| `confirmText` | `string` | `"确认"` | 确认按钮文字 |
+| `cancelText` | `string` | `"取消"` | 取消按钮文字 |
+| `danger` | `boolean` | `false` | 确认按钮显示为红色（危险操作） |
+
+### 基本用法
+
+```components/ConfirmDialog.vue#L1-5
+<ConfirmDialog ref="confirmRef" />
+```
+
+```components/ConfirmDialog.vue#L1-10
+const confirmRef = useTemplateRef<InstanceType<typeof ConfirmDialog>>("confirmRef");
+
+// 确认弹窗（危险操作）
+const ok = await confirmRef.value?.confirm({
+  title: "删除",
+  message: "确认删除？此操作不可撤销。",
+  confirmText: "删除",
+  danger: true,
+});
+if (!ok) return;
+
+// 提示弹窗
+await confirmRef.value?.alert({ title: "提示", message: "请先选择商品" });
+```
+
+
 ## StatusTag
 
 状态标签组件，用于展示订单状态、支付状态、发货状态等。

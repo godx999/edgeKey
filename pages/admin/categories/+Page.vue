@@ -84,11 +84,13 @@
       </div>
     </div>
   </section>
+  <ConfirmDialog ref="confirmRef" />
 </template>
 
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../../lib/app-error";
-import { reactive, ref } from "vue";
+import { reactive, ref, useTemplateRef } from "vue";
+import ConfirmDialog from "../../../components/ConfirmDialog.vue";
 import { useData } from "vike-vue/useData";
 import StatusTag from "../../../components/StatusTag.vue";
 import { onDeleteCategory } from "./deleteCategory.telefunc";
@@ -101,6 +103,7 @@ const { categories } = useData<Data>();
 const categoryList = ref([...categories]);
 const saving = ref(false);
 const errorMessage = ref("");
+const confirmRef = useTemplateRef<InstanceType<typeof ConfirmDialog>>("confirmRef");
 
 const form = reactive({
   id: undefined as number | undefined,
@@ -178,7 +181,7 @@ async function handleToggle(category: (typeof categories)[number]) {
 }
 
 async function handleDelete(category: (typeof categories)[number]) {
-  if (!window.confirm(`确认删除分类“${category.name}”吗？`)) {
+  if (!await confirmRef.value?.confirm({ title: "删除分类", message: `确认删除分类"${category.name}"吗？`, confirmText: "删除", danger: true })) {
     return;
   }
 
