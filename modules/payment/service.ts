@@ -12,6 +12,7 @@ import type { PaymentConfigValue } from "./types";
 import { createBepusdtAdapter } from "./bepusdt";
 import { createEpayAdapter } from "./epay";
 import { createAlipayAdapter, queryAlipayTrade } from "./alipay";
+import { createStripeAdapter } from "./stripe";
 import { deliverOrder } from "../delivery/service";
 import { findOrderRecord, updateOrderPayment } from "../order/repository";
 import { notifyOrderPaid as _notifyOrderPaid } from "../email/service";
@@ -46,6 +47,17 @@ const defaultPaymentConfigs: Record<PaymentProvider, PaymentConfigValue> = {
     alipayPrivateKey: "",
     alipayPublicKey: "",
     notifyUrl: "/api/payments/alipay/notify",
+    returnUrl: "/order/{orderNo}?token={token}",
+  },
+  STRIPE: {
+    provider: "STRIPE",
+    name: "Stripe",
+    isEnabled: false,
+    baseUrl: "https://api.stripe.com",
+    stripeSecretKey: "",
+    stripeWebhookSecret: "",
+    stripeCurrency: "cny",
+    notifyUrl: "/api/payments/stripe/notify",
     returnUrl: "/order/{orderNo}?token={token}",
   },
 };
@@ -121,6 +133,9 @@ export async function savePaymentConfig(input: PaymentConfigValue) {
     alipayAppId: input.alipayAppId?.trim() || "",
     alipayPrivateKey: input.alipayPrivateKey?.trim() || "",
     alipayPublicKey: input.alipayPublicKey?.trim() || "",
+    stripeSecretKey: input.stripeSecretKey?.trim() || "",
+    stripeWebhookSecret: input.stripeWebhookSecret?.trim() || "",
+    stripeCurrency: input.stripeCurrency?.trim() || "cny",
   };
 
   const record = await upsertPaymentConfigRecord(prisma, input.provider, {
@@ -151,6 +166,9 @@ function createProviderAdapter(config: PaymentConfigValue) {
   }
   if (config.provider === "ALIPAY") {
     return createAlipayAdapter(config);
+  }
+  if (config.provider === "STRIPE") {
+    return createStripeAdapter(config);
   }
   return createEpayAdapter(config);
 }

@@ -16,10 +16,15 @@
         支付宝
         <span v-if="localConfigs.ALIPAY?.isEnabled" class="ml-1.5 inline-block w-2 h-2 rounded-full bg-success"></span>
       </a>
+      <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'STRIPE' }" @click="activeTab = 'STRIPE'">
+        Stripe
+        <span v-if="localConfigs.STRIPE?.isEnabled" class="ml-1.5 inline-block w-2 h-2 rounded-full bg-success"></span>
+      </a>
     </div>
     <PaymentConfigCard v-if="activeTab === 'BEPUSDT'" provider="BEPUSDT" title="Usdt/Usdc(数字货币)" :initial-value="localConfigs.BEPUSDT" @saved="localConfigs.BEPUSDT = $event" />
     <PaymentConfigCard v-if="activeTab === 'EPAY'" provider="EPAY" title="易支付(聚合支付)" :initial-value="localConfigs.EPAY" @saved="localConfigs.EPAY = $event" />
     <PaymentConfigCard v-if="activeTab === 'ALIPAY'" provider="ALIPAY" title="支付宝(官方)" :initial-value="localConfigs.ALIPAY" @saved="localConfigs.ALIPAY = $event" />
+    <PaymentConfigCard v-if="activeTab === 'STRIPE'" provider="STRIPE" title="Stripe(信用卡)" :initial-value="localConfigs.STRIPE" @saved="localConfigs.STRIPE = $event" />
   </section>
 </template>
 
@@ -31,5 +36,5 @@ import type { Data } from "./+data";
 
 const { configs } = useData<Data>();
 const activeTab = ref("BEPUSDT");
-const localConfigs = reactive({ ...configs });
+const localConfigs = reactive<Record<string, any>>({ ...configs });
 </script>
