@@ -158,17 +158,12 @@ async function checkUpdate() {
   statusColor.value = 'status-warning';
   updateTip.value = '检查中...';
   try {
-    const [pkgRes, commitRes] = await Promise.all([
-      fetch('https://raw.githubusercontent.com/34892002/edgeKey/main/package.json'),
-      fetch('https://api.github.com/repos/34892002/edgeKey/commits/main?per_page=1'),
-    ]);
+    const pkgRes = await fetch('https://raw.githubusercontent.com/34892002/edgeKey/main/package.json');
     const pkg = await pkgRes.json() as { version?: string };
-    const commit = await commitRes.json() as { sha?: string };
-    if (!pkg.version || !commit.sha) throw new Error('invalid response');
-    const latestHash = commit.sha.slice(0, 7);
-    const isLatest = pkg.version === appVersion && latestHash === gitHash;
+    if (!pkg.version) throw new Error('invalid response');
+    const isLatest = pkg.version === appVersion;
     statusColor.value = isLatest ? 'status-success' : 'status-error';
-    updateTip.value = isLatest ? '已是最新版本' : `有新版本 v${pkg.version}-${latestHash}`;
+    updateTip.value = isLatest ? `已是最新版本` : `有新版本 v${pkg.version}`;
   } catch {
     statusColor.value = 'status-error';
     updateTip.value = '检查失败，请稍后重试';
