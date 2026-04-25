@@ -119,7 +119,7 @@
                   <td class="font-mono text-sm">{{ item.id }}</td>
                   <td>{{ item.name || '-' }}</td>
                   <td>
-                    <span class="badge badge-outline">{{ getChannelLabel(item.provider) }}</span>
+                    <StatusTag variant="outline">{{ getChannelLabel(item.provider) }}</StatusTag>
                   </td>
                   <td>{{ item.fromEmail || '-' }}</td>
                   <td>
@@ -128,9 +128,9 @@
                     <span v-else>{{ (item as any).cloudflareBindingName || '-' }}</span>
                   </td>
                   <td>
-                    <span class="badge" :class="item.isEnabled ? 'badge-success' : 'badge-ghost'">
+                    <StatusTag :type="item.isEnabled ? 'success' : 'default'">
                       {{ item.isEnabled ? '已激活' : '未激活' }}
-                    </span>
+                    </StatusTag>
                   </td>
                   <td>
                     <div class="flex items-center gap-2">
@@ -410,9 +410,9 @@
                 <td class="whitespace-nowrap">{{ configs.find(c => c.provider === log.provider)?.name || '-' }}</td>
                 <td class="whitespace-nowrap">{{ getSceneLabel(log.scene) }}</td>
                 <td>
-                  <span class="badge whitespace-nowrap" :class="log.status === 'SUCCESS' ? 'badge-success' : 'badge-error'">
+                  <StatusTag class="whitespace-nowrap" :type="log.status === 'SUCCESS' ? 'success' : 'danger'">
                     {{ log.status === 'SUCCESS' ? '成功' : '失败' }}
-                  </span>
+                  </StatusTag>
                 </td>
                 <td class="whitespace-nowrap">{{ log.toEmail }}</td>
                 <td class="max-w-xs truncate" :title="log.subject">{{ log.subject }}</td>
@@ -481,6 +481,7 @@
 
 <script setup lang="ts">
 import SecretInput from "../../../components/SecretInput.vue";
+import StatusTag from "../../../components/StatusTag.vue";
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref, computed } from "vue";
 import { useData } from "vike-vue/useData";

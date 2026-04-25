@@ -9,9 +9,9 @@
             <p class="text-sm text-base-content/70">订单号：{{ order.orderNo }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <span class="badge badge-outline">{{ getOrderStatusLabel(order.status) }}</span>
-            <span class="badge badge-outline">{{ getPaymentStatusLabel(order.paymentStatus) }}</span>
-            <span class="badge badge-outline">{{ getDeliveryStatusLabel(order.deliveryStatus) }}</span>
+            <StatusTag :type="getOrderStatusType(order.status)">{{ getOrderStatusLabel(order.status) }}</StatusTag>
+            <StatusTag :type="getPaymentStatusType(order.paymentStatus)">{{ getPaymentStatusLabel(order.paymentStatus) }}</StatusTag>
+            <StatusTag :type="getDeliveryStatusType(order.deliveryStatus)">{{ getDeliveryStatusLabel(order.deliveryStatus) }}</StatusTag>
           </div>
         </div>
         <div class="grid gap-4 md:grid-cols-2">
@@ -77,11 +77,15 @@ import { useData } from "vike-vue/useData";
 import { formatCents } from "../../../../lib/utils/money";
 import {
   getDeliveryStatusLabel,
+  getDeliveryStatusType,
   getOrderStatusLabel,
+  getOrderStatusType,
   getPaymentProviderLabel,
   getPaymentStatusLabel,
+  getPaymentStatusType,
   getVerifyStatusLabel,
 } from "../../../../lib/utils/order-status";
+import StatusTag from "../../../../components/StatusTag.vue";
 import { onCloseOrder } from "./closeOrder.telefunc";
 import { onRedeliver } from "./redeliver.telefunc";
 import type { Data } from "./+data";

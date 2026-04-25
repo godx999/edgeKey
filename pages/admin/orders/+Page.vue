@@ -38,9 +38,9 @@
         <template #paymentProvider="{ value }">{{ getPaymentProviderLabel(value) }}</template>
         <template #status="{ row }">
           <div class="flex flex-wrap gap-1">
-            <span class="badge" :class="orderStatusClass(row.status)">{{ getOrderStatusLabel(row.status) }}</span>
-            <span class="badge" :class="paymentStatusClass(row.paymentStatus)">{{ getPaymentStatusLabel(row.paymentStatus) }}</span>
-            <span class="badge" :class="deliveryStatusClass(row.deliveryStatus)">{{ getDeliveryStatusLabel(row.deliveryStatus) }}</span>
+            <StatusTag :type="getOrderStatusType(row.status)">{{ getOrderStatusLabel(row.status) }}</StatusTag>
+            <StatusTag :type="getPaymentStatusType(row.paymentStatus)">{{ getPaymentStatusLabel(row.paymentStatus) }}</StatusTag>
+            <StatusTag :type="getDeliveryStatusType(row.deliveryStatus)">{{ getDeliveryStatusLabel(row.deliveryStatus) }}</StatusTag>
           </div>
         </template>
         <template #createdAt="{ value }">{{ new Date(value).toLocaleString() }}</template>
@@ -57,7 +57,8 @@ import { reactive, ref } from "vue";
 import { useData } from "vike-vue/useData";
 import DataTable from "../../../components/DataTable.vue";
 import { formatCents } from "../../../lib/utils/money";
-import { getDeliveryStatusLabel, getOrderStatusLabel, getPaymentProviderLabel, getPaymentStatusLabel } from "../../../lib/utils/order-status";
+import { getDeliveryStatusLabel, getDeliveryStatusType, getOrderStatusLabel, getOrderStatusType, getPaymentProviderLabel, getPaymentStatusLabel, getPaymentStatusType } from "../../../lib/utils/order-status";
+import StatusTag from "../../../components/StatusTag.vue";
 import { onQueryOrders } from "./queryOrders.telefunc";
 import type { Data } from "./+data";
 
@@ -98,23 +99,7 @@ async function handleSearch() { await fetchPage(1); }
 /**
  * 获取订单状态对应的样式类，采用 badge-soft 提升可读性
  */
-function orderStatusClass(s: string) {
-  return "badge-soft " + ({ PENDING: "badge-warning", PAID: "badge-info", DELIVERED: "badge-success", CLOSED: "badge-ghost", FAILED: "badge-error" }[s] ?? "badge-outline");
-}
 
-/**
- * 获取支付状态对应的样式类
- */
-function paymentStatusClass(s: string) {
-  return "badge-soft " + ({ UNPAID: "badge-warning", PAID: "badge-success", FAILED: "badge-error" }[s] ?? "badge-outline");
-}
-
-/**
- * 获取发货状态对应的样式类
- */
-function deliveryStatusClass(s: string) {
-  return "badge-soft " + ({ NOT_DELIVERED: "badge-warning", DELIVERED: "badge-success", FAILED: "badge-error" }[s] ?? "badge-outline");
-}
 
 async function handleReset() {
   filter.orderNo = "";

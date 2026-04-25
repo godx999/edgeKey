@@ -1,5 +1,50 @@
 # 公共组件文档
 
+## StatusTag
+
+状态标签组件，用于展示订单状态、支付状态、发货状态等。
+
+### Props
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `type` | `"primary" \| "success" \| "danger" \| "warning" \| "default"` | `"default"` | 颜色类型 |
+| `size` | `"sm" \| "md" \| "lg"` | `"sm"` | 大小 |
+| `variant` | `"solid" \| "outline" \| "pill"` | `"solid"` | 样式风格 |
+
+### 颜色对应
+
+| type | 颜色 | 适用场景 |
+|------|------|----------|
+| `primary` | 蓝色 | 主要操作、信息 |
+| `success` | 绿色 | 已完成、已支付、已发货 |
+| `danger` | 红色 | 失败、错误 |
+| `warning` | 橙色 | 待处理、未支付、未发货 |
+| `default` | 灰色 | 已关闭、中性状态 |
+
+### 基本用法
+
+```components/StatusTag.vue#L1-3
+<StatusTag type="success">已支付</StatusTag>
+<StatusTag type="warning">待处理</StatusTag>
+<StatusTag type="danger">发货失败</StatusTag>
+```
+
+### 配合 order-status 工具函数
+
+`lib/utils/order-status.ts` 提供了对应的 type 辅助函数：
+
+- `getOrderStatusType(status)` — 订单状态 → type
+- `getPaymentStatusType(status)` — 支付状态 → type
+- `getDeliveryStatusType(status)` — 发货状态 → type
+
+```components/StatusTag.vue#L1-5
+<StatusTag :type="getOrderStatusType(order.status)">
+  {{ getOrderStatusLabel(order.status) }}
+</StatusTag>
+```
+
+
 ## SecretInput
 
 带显示/隐藏切换的密钥输入框，用于密码、API Secret 等敏感字段。

@@ -52,6 +52,35 @@ export function getPaymentProviderLabel(provider: string) {
   }
 }
 
+export function getOrderStatusType(status: string): "warning" | "success" | "primary" | "danger" | "default" {
+  switch (status) {
+    case "PENDING": return "warning";
+    case "PAID": return "success";
+    case "DELIVERED": return "success";
+    case "CLOSED": return "default";
+    case "FAILED": return "danger";
+    default: return "default";
+  }
+}
+
+export function getPaymentStatusType(status: string): "warning" | "success" | "danger" | "default" {
+  switch (status) {
+    case "UNPAID": return "warning";
+    case "PAID": return "success";
+    case "FAILED": return "danger";
+    default: return "default";
+  }
+}
+
+export function getDeliveryStatusType(status: string): "warning" | "success" | "danger" | "default" {
+  switch (status) {
+    case "NOT_DELIVERED": return "warning";
+    case "DELIVERED": return "success";
+    case "FAILED": return "danger";
+    default: return "default";
+  }
+}
+
 export function getVerifyStatusLabel(status: string) {
   switch (status) {
     case "PENDING":

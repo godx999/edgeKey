@@ -64,9 +64,9 @@
                 <td>{{ category.slug }}</td>
                 <td>{{ category.sort }}</td>
                 <td>
-                  <span class="badge" :class="category.status === 'ACTIVE' ? 'badge-success' : 'badge-ghost'">
+                  <StatusTag :type="category.status === 'ACTIVE' ? 'success' : 'default'">
                     {{ category.status === 'ACTIVE' ? '启用' : '停用' }}
-                  </span>
+                  </StatusTag>
                 </td>
                 <td>
                   <div class="flex gap-2">
@@ -90,6 +90,7 @@
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref } from "vue";
 import { useData } from "vike-vue/useData";
+import StatusTag from "../../../components/StatusTag.vue";
 import { onDeleteCategory } from "./deleteCategory.telefunc";
 import { onSaveCategory } from "./saveCategory.telefunc";
 import { onToggleCategory } from "./toggleCategory.telefunc";

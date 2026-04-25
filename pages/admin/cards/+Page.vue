@@ -78,7 +78,7 @@
             <code>{{ value }}</code>
           </template>
           <template #status="{ value }">
-            <span class="badge" :class="getStatusBadgeClass(value)">{{ getStatusLabel(value) }}</span>
+            <StatusTag :type="getCardStatusType(value)">{{ getStatusLabel(value) }}</StatusTag>
           </template>
           <template #createdAt="{ value }">
             {{ formatDate(value) }}
@@ -106,6 +106,7 @@ import { onImportCards } from "./importCards.telefunc";
 import { onQueryCards } from "./queryCards.telefunc";
 import { onDeleteCard } from "./deleteCard.telefunc";
 import DataTable from "../../../components/DataTable.vue";
+import StatusTag from "../../../components/StatusTag.vue";
 import type { Data } from "./+data";
 
 const { cards, products, overview } = useData<Data>();
@@ -141,8 +142,8 @@ function getStatusLabel(status: string) {
   return ({ UNUSED: "未售出", SOLD: "已售出", LOCKED: "锁定中", INVALID: "已失效" } as Record<string, string>)[status] || status;
 }
 
-function getStatusBadgeClass(status: string) {
-  return ({ UNUSED: "badge-success", SOLD: "badge-ghost", LOCKED: "badge-warning", INVALID: "badge-error" } as Record<string, string>)[status] || "badge-ghost";
+function getCardStatusType(status: string): "success" | "default" | "warning" | "danger" {
+  return ({ UNUSED: "success", SOLD: "default", LOCKED: "warning", INVALID: "danger" } as Record<string, "success" | "default" | "warning" | "danger">)[status] ?? "default";
 }
 
 async function fetchPage(page: number) {

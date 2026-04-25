@@ -36,9 +36,9 @@
               <td>{{ formatCents(product.price) }}</td>
               <td>{{ product.minBuy }} - {{ product.maxBuy }}</td>
               <td>
-                <span class="badge" :class="product.status === 'ACTIVE' ? 'badge-success' : 'badge-ghost'">
+                <StatusTag :type="product.status === 'ACTIVE' ? 'success' : 'default'">
                   {{ product.status === 'ACTIVE' ? '上架' : '下架' }}
-                </span>
+                </StatusTag>
               </td>
               <td>
                 <div class="flex gap-2">
@@ -59,6 +59,7 @@ import { normalizeTelefuncError } from "../../../lib/app-error";
 import { ref } from "vue";
 import { useData } from "vike-vue/useData";
 import { formatCents } from "../../../lib/utils/money";
+import StatusTag from "../../../components/StatusTag.vue";
 import { onDeleteProduct } from "./deleteProduct.telefunc";
 import type { Data } from "./+data";
 
