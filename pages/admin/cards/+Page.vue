@@ -6,43 +6,56 @@
       <article class="card bg-base-100 shadow-sm"><div class="card-body"><div class="text-sm text-base-content/60">已售出</div><div class="text-3xl font-bold text-secondary">{{ overview.sold }}</div></div></article>
     </div>
 
+    <!-- 新增卡密弹窗 -->
+    <dialog ref="addModalRef" class="modal">
+      <div class="modal-box space-y-3">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="text-lg font-bold">新增卡密</h3>
+        <select v-model="singleForm.productId" class="select select-bordered w-full">
+          <option value="">请选择商品</option>
+          <option v-for="product in products" :key="product.id" :value="String(product.id)">{{ product.name }}</option>
+        </select>
+        <input v-model="singleForm.batchNo" class="input input-bordered w-full" placeholder="批次号（可选）" />
+        <textarea v-model="singleForm.content" class="textarea textarea-bordered w-full" rows="4" placeholder="输入卡密内容"></textarea>
+        <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
+        <div class="modal-action">
+          <button class="btn btn-primary" @click="handleCreateCard">新增卡密</button><form method="dialog"><button class="btn btn-ghost">取消</button></form>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
+    <!-- 批量导入弹窗 -->
+    <dialog ref="importModalRef" class="modal">
+      <div class="modal-box space-y-3">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <h3 class="text-lg font-bold">批量导入</h3>
+        <select v-model="importForm.productId" class="select select-bordered w-full">
+          <option value="">请选择商品</option>
+          <option v-for="product in products" :key="product.id" :value="String(product.id)">{{ product.name }}</option>
+        </select>
+        <input v-model="importForm.batchNo" class="input input-bordered w-full" placeholder="批次号（可选）" />
+        <textarea v-model="importForm.lines" class="textarea textarea-bordered w-full" rows="8" placeholder="每行一条卡密"></textarea>
+        <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
+        <div class="modal-action">
+          <button class="btn btn-primary" @click="handleImportCards">导入卡密</button>
+          <form method="dialog"><button class="btn btn-ghost">取消</button></form>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+
     <section class="card bg-base-100 shadow-sm">
       <div class="card-body space-y-4">
-        <div class="grid gap-6 lg:grid-cols-2">
-          <div class="space-y-3">
-            <h1 class="text-xl font-bold">单条新增</h1>
-            <select v-model="singleForm.productId" class="select select-bordered w-full">
-              <option value="">请选择商品</option>
-              <option v-for="product in products" :key="product.id" :value="String(product.id)">{{ product.name }}</option>
-            </select>
-            <input v-model="singleForm.batchNo" class="input input-bordered w-full" placeholder="批次号（可选）" />
-            <textarea v-model="singleForm.content" class="textarea textarea-bordered w-full" rows="4" placeholder="输入卡密内容"></textarea>
-            <button class="btn btn-primary" @click="handleCreateCard">新增卡密</button>
-          </div>
-
-          <div class="space-y-3">
-            <h2 class="text-xl font-bold">批量导入</h2>
-            <select v-model="importForm.productId" class="select select-bordered w-full">
-              <option value="">请选择商品</option>
-              <option v-for="product in products" :key="product.id" :value="String(product.id)">{{ product.name }}</option>
-            </select>
-            <input v-model="importForm.batchNo" class="input input-bordered w-full" placeholder="批次号（可选）" />
-            <textarea v-model="importForm.lines" class="textarea textarea-bordered w-full" rows="8" placeholder="每行一条卡密"></textarea>
-            <div class="flex items-center gap-3">
-              <button class="btn btn-primary" @click="handleImportCards">导入卡密</button>
-              <button class="btn btn-ghost" :disabled="!importForm.productId" @click="handleDeleteUnused">清空该商品未售库存</button>
-            </div>
+        <div class="flex items-center justify-between gap-4">
+          <h2 class="text-xl font-bold">库存列表</h2>
+          <div class="flex gap-2">
+            <button class="btn btn-sm btn-primary" @click="addModalRef?.showModal()">新增卡密</button>
+            <button class="btn btn-sm btn-outline" @click="importModalRef?.showModal()">批量导入</button>
+            <button class="btn btn-sm btn-error btn-outline" @click="handleDeleteUnused">清空未售库存</button>
           </div>
         </div>
-        <p class="text-sm text-base-content/70">支持单条录入、批量导入和按商品清空未售库存。</p>
         <p v-if="message" class="text-sm text-base-content/70">{{ message }}</p>
-        <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
-      </div>
-    </section>
-
-    <section class="card bg-base-100 shadow-sm">
-      <div class="card-body space-y-4">
-        <h2 class="text-xl font-bold">库存列表</h2>
 
         <!-- 搜索筛选 -->
         <div class="flex flex-wrap gap-3 items-center">
@@ -97,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive, ref, useTemplateRef } from "vue";
 import { useData } from "vike-vue/useData";
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { onCreateCard } from "./createCard.telefunc";
@@ -115,6 +128,8 @@ const PAGE_SIZE = 20;
 const currentPage = ref(1);
 const cardPage = ref({ items: [...cards], total: cards.length });
 
+const addModalRef = useTemplateRef<HTMLDialogElement>("addModalRef");
+const importModalRef = useTemplateRef<HTMLDialogElement>("importModalRef");
 const message = ref("");
 const errorMessage = ref("");
 
@@ -188,6 +203,7 @@ async function handleCreateCard() {
     });
     singleForm.content = "";
     singleForm.batchNo = "";
+    addModalRef.value?.close();
     message.value = "新增成功";
     await fetchPage(1);
   } catch (error) {
@@ -206,6 +222,7 @@ async function handleImportCards() {
     });
     importForm.lines = "";
     importForm.batchNo = "";
+    importModalRef.value?.close();
     message.value = `已导入 ${result.count} 条卡密`;
     await fetchPage(1);
   } catch (error) {
@@ -227,10 +244,16 @@ async function handleDeleteCard(id: number) {
 }
 
 async function handleDeleteUnused() {
+  if (!filter.productId) {
+    alert("请先在筛选区选择商品");
+    return;
+  }
+  const product = products.find(p => String(p.id) === filter.productId);
+  if (!confirm(`确认清空「${product?.name ?? filter.productId}」所有未售卡密？此操作不可撤销。`)) return;
   message.value = "";
   errorMessage.value = "";
   try {
-    const result = await onDeleteUnusedCards({ productId: Number(importForm.productId) });
+    const result = await onDeleteUnusedCards({ productId: Number(filter.productId) });
     message.value = `已删除 ${result.count} 条未售卡密`;
     await fetchPage(currentPage.value);
   } catch (error) {
