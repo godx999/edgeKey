@@ -141,8 +141,17 @@ const appVersion = __APP_VERSION__;
 
 const statusColor = ref('status-success');
 const updateTip = ref('点击检查更新');
+const lastCheckTime = ref(0);
+const COOLDOWN_MS = 10 * 60 * 1000;
 
 async function checkUpdate() {
+  const now = Date.now();
+  if (now - lastCheckTime.value < COOLDOWN_MS) {
+    // const remaining = Math.ceil((COOLDOWN_MS - (now - lastCheckTime.value)) / 60000);
+    updateTip.value = '请勿频繁查询';
+    return;
+  }
+  lastCheckTime.value = now;
   statusColor.value = 'status-warning';
   updateTip.value = '检查中...';
   try {
