@@ -1,7 +1,11 @@
 import { AppError, getErrorMessage, toAppError } from "./app-error";
 import { getRequestContext } from "./request-context";
 
-type LogLevel = "debug" | "info" | "warn" | "error";
+// Cloudflare Workers Observability 只收集 console.info / console.warn / console.error 输出的日志。
+// console.debug 会被过滤，不会出现在 Cloudflare Dashboard → Workers → Observability 面板中。
+// 因此本 logger 只保留 info / warn / error 三个级别，禁止使用 debug 级别。
+
+type LogLevel = "info" | "warn" | "error";
 type LogContext = Record<string, unknown>;
 type LogInput = string | Error;
 
@@ -56,7 +60,7 @@ function buildLogEntry(level: LogLevel, input: LogInput, context?: LogContext) {
 
 function write(level: LogLevel, input: LogInput, context?: LogContext) {
   const entry = buildLogEntry(level, input, context);
-  const method = level === "debug" ? console.debug : level === "info" ? console.info : level === "warn" ? console.warn : console.error;
+  const method = level === "info" ? console.info : level === "warn" ? console.warn : console.error;
   method(entry);
 }
 
@@ -67,9 +71,6 @@ function createLogger(defaultContext?: LogContext) {
   });
 
   return {
-    debug(input: LogInput, context?: LogContext) {
-      write("debug", input, mergeContext(context));
-    },
     info(input: LogInput, context?: LogContext) {
       write("info", input, mergeContext(context));
     },

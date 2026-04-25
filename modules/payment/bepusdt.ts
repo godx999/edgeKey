@@ -87,7 +87,7 @@ export function createBepusdtAdapter(config: BepusdtConfig): PaymentProviderAdap
         };
       }
 
-      logger.debug("bepusdt.verify_notify", { payload });
+      logger.info("bepusdt.verify_notify", { payload });
       const signature = payload.signature || "";
       const unsignedPayload = { ...payload };
       delete unsignedPayload.signature;

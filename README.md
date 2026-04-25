@@ -304,4 +304,4 @@ bun dev
    - `payment.notify.route_exception` — 支付回调路由异常
    - `payment.notify.context_missing` — 支付回调缺少数据库上下文
    - `payment.notify.diagnostic` — 支付回调校验异常诊断（签名错误、金额不匹配等）
-   - `bepusdt.verify_notify` — BEpusdt 回调原始 payload（debug 级别）
+   - `bepusdt.verify_notify` — BEpusdt 回调原始 payload（info 级别）
