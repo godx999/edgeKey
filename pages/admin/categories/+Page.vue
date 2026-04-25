@@ -6,7 +6,7 @@
           <h1 class="text-2xl font-bold">分类管理</h1>
           <p class="text-sm text-base-content/70">管理前台商品分类、排序和启用状态。</p>
         </div>
-        <button class="btn btn-primary btn-sm" @click="resetForm">新增分类</button>
+        <AppButton variant="primary" size="sm" @click="resetForm">新增分类</AppButton>
       </div>
 
       <div class="grid gap-6 lg:grid-cols-[1.2fr_2fr]">
@@ -30,10 +30,8 @@
               <input v-model.number="form.sort" type="number" class="input input-bordered w-full" />
             </label>
             <div class="flex items-center gap-3">
-              <button class="btn btn-primary" :disabled="saving" @click="handleSave">
-                {{ saving ? "保存中..." : "保存分类" }}
-              </button>
-              <button class="btn btn-ghost" @click="resetForm">重置</button>
+              <AppButton variant="primary" size="sm" :loading="saving" @click="handleSave">保存分类</AppButton>
+              <AppButton variant="ghost" size="sm" @click="resetForm">重置</AppButton>
             </div>
             <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
           </div>
@@ -70,11 +68,9 @@
                 </td>
                 <td>
                   <div class="flex gap-2">
-                    <button class="btn btn-xs btn-outline" @click="startEdit(category)">编辑</button>
-                    <button class="btn btn-xs" @click="handleToggle(category)">
-                      {{ category.status === 'ACTIVE' ? '停用' : '启用' }}
-                    </button>
-                    <button class="btn btn-xs btn-error btn-outline" @click="handleDelete(category)">删除</button>
+                    <AppButton size="xs" variant="outline" @click="startEdit(category)">编辑</AppButton>
+                    <AppButton size="xs" variant="outline" @click="handleToggle(category)">{{ category.status === 'ACTIVE' ? '停用' : '启用' }}</AppButton>
+                    <AppButton size="xs" variant="danger" @click="handleDelete(category)">删除</AppButton>
                   </div>
                 </td>
               </tr>
@@ -91,6 +87,7 @@
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref, useTemplateRef } from "vue";
 import ConfirmDialog from "../../../components/ConfirmDialog.vue";
+import AppButton from "../../../components/AppButton.vue";
 import { useData } from "vike-vue/useData";
 import StatusTag from "../../../components/StatusTag.vue";
 import { onDeleteCategory } from "./deleteCategory.telefunc";

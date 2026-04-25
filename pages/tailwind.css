@@ -5,16 +5,13 @@
 @plugin "daisyui/theme" {
   name: "light";
   default: true;
-  /* 在这里修改你的品牌主色调，支持直接写颜色名、Hex(#xxx) 或 oklch() */
-  --color-primary: oklch(45% 0.25 270); /* 当前默认是一个偏蓝紫色的主色 */
-  /* --color-secondary: oklch(70% 0.25 200); */
+  --color-primary: oklch(45% 0.25 270);
 }
 
 /* 2. 自定义暗色模式（跟随系统暗黑） */
 @plugin "daisyui/theme" {
   name: "dark";
   prefersdark: true;
-  /* 暗黑模式下的主色调可以稍微提亮一点，保证在深色背景上的可读性 */
   --color-primary: oklch(65% 0.2 270);
 }
 

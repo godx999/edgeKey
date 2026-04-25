@@ -29,12 +29,8 @@
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-3 pt-2">
-          <button class="btn btn-sm btn-primary" :disabled="order.deliveryStatus === 'DELIVERED' || order.paymentStatus !== 'PAID'" @click="handleRedeliver">
-            手动补发
-          </button>
-          <button class="btn btn-sm btn-outline" :disabled="order.status === 'CLOSED'" @click="handleClose">
-            关闭订单
-          </button>
+          <AppButton size="sm" variant="primary" :disabled="order.deliveryStatus === 'DELIVERED' || order.paymentStatus !== 'PAID'" @click="handleRedeliver">手动补发</AppButton>
+          <AppButton size="sm" variant="outline" :disabled="order.status === 'CLOSED'" @click="handleClose">关闭订单</AppButton>
           <span v-if="actionMessage" class="text-sm text-success">{{ actionMessage }}</span>
           <span v-if="actionError" class="text-sm text-error">{{ actionError }}</span>
         </div>
@@ -86,6 +82,7 @@ import {
   getVerifyStatusLabel,
 } from "../../../../lib/utils/order-status";
 import StatusTag from "../../../../components/StatusTag.vue";
+import AppButton from "../../../../components/AppButton.vue";
 import { onCloseOrder } from "./closeOrder.telefunc";
 import { onRedeliver } from "./redeliver.telefunc";
 import type { Data } from "./+data";

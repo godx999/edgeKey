@@ -60,9 +60,7 @@
       </label>
 
       <div class="flex items-center gap-3">
-        <button class="btn btn-primary" :disabled="saving" @click="handleSave">
-          {{ saving ? "保存中..." : "保存设置" }}
-        </button>
+        <AppButton variant="primary" :loading="saving" @click="handleSave">保存设置</AppButton>
         <span v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</span>
       </div>
     </div>
@@ -70,6 +68,7 @@
 </template>
 
 <script setup lang="ts">
+import AppButton from "../../../components/AppButton.vue";
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref } from "vue";
 import { useData } from "vike-vue/useData";

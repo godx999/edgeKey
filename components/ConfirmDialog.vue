@@ -4,8 +4,8 @@
       <h3 class="text-lg font-bold">{{ state.title }}</h3>
       <p class="py-4 text-base-content/80">{{ state.message }}</p>
       <div class="modal-action">
-        <button class="btn" :class="state.danger ? 'btn-error' : 'btn-primary'" @click="resolve(true)">{{ state.confirmText ?? '确认' }}</button>
-        <button v-if="!state.alertMode" class="btn btn-ghost" @click="resolve(false)">{{ state.cancelText ?? '取消' }}</button>
+        <AppButton :variant="state.danger ? 'danger' : 'primary'" @click="resolve(true)">{{ state.confirmText ?? '确认' }}</AppButton>
+        <AppButton v-if="!state.alertMode" variant="ghost" @click="resolve(false)">{{ state.cancelText ?? '取消' }}</AppButton>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop"><button @click="resolve(false)">close</button></form>
@@ -14,6 +14,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from "vue";
+import AppButton from "./AppButton.vue";
 
 const dialogRef = ref<HTMLDialogElement>();
 

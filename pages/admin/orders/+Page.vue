@@ -22,8 +22,8 @@
         </select>
         <input v-model="filter.startDate" type="date" class="input input-sm input-bordered w-40" />
         <input v-model="filter.endDate" type="date" class="input input-sm input-bordered w-40" />
-        <button class="btn btn-sm btn-primary" @click="handleSearch">搜索</button>
-        <button class="btn btn-sm btn-ghost" @click="handleReset">重置</button>
+        <AppButton size="sm" variant="primary" @click="handleSearch">搜索</AppButton>
+        <AppButton size="sm" variant="ghost" @click="handleReset">重置</AppButton>
       </div>
 
       <DataTable
@@ -45,7 +45,7 @@
         </template>
         <template #createdAt="{ value }">{{ new Date(value).toLocaleString() }}</template>
         <template #actions="{ row }">
-          <a :href="`/admin/orders/${row.id}`" class="btn btn-xs btn-outline">详情</a>
+          <AppButton :href="`/admin/orders/${row.id}`" size="xs" variant="outline">详情</AppButton>
         </template>
       </DataTable>
     </div>
@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from "vue";
+import AppButton from "../../../components/AppButton.vue";
 import { useData } from "vike-vue/useData";
 import DataTable from "../../../components/DataTable.vue";
 import { formatCents } from "../../../lib/utils/money";

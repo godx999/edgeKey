@@ -4,7 +4,7 @@
       <div class="card-body space-y-4 text-center">
         <h1 class="text-2xl font-bold">需要管理员登录</h1>
         <p class="text-sm text-base-content/70">正在跳转到后台登录页，如果没有自动跳转，请手动点击下面按钮。</p>
-        <a class="btn btn-primary" :href="`/admin/login?redirect=${encodeURIComponent(currentPath)}`">前往登录</a>
+        <AppButton variant="primary" :href="`/admin/login?redirect=${encodeURIComponent(currentPath)}`">前往登录</AppButton>
       </div>
     </section>
   </div>
@@ -106,7 +106,7 @@
         
         <!-- Footer Area -->
         <div class="p-4 border-t border-base-300 mt-auto">
-          <a href="/" class="btn btn-outline btn-block lg:hidden">返回前台</a>
+          <AppButton href="/" variant="outline" block class="lg:hidden">返回前台</AppButton>
           <div class="hidden lg:flex items-center justify-between text-xs text-base-content/50 px-2">
             <span>EdgeKey</span>
             <span>v1.0.0</span>
@@ -119,6 +119,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
+import AppButton from "../../components/AppButton.vue";
 import { usePageContext } from "vike-vue/usePageContext";
 
 import logoUrl from "../../assets/logo.svg";

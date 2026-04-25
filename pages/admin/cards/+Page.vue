@@ -19,7 +19,7 @@
         <textarea v-model="singleForm.content" class="textarea textarea-bordered w-full" rows="4" placeholder="输入卡密内容"></textarea>
         <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
         <div class="modal-action">
-          <button class="btn btn-primary" @click="handleCreateCard">新增卡密</button><form method="dialog"><button class="btn btn-ghost">取消</button></form>
+          <AppButton variant="primary" @click="handleCreateCard">新增卡密</AppButton><form method="dialog"><AppButton variant="ghost">取消</AppButton></form>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop"><button>close</button></form>
@@ -38,8 +38,8 @@
         <textarea v-model="importForm.lines" class="textarea textarea-bordered w-full" rows="8" placeholder="每行一条卡密"></textarea>
         <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
         <div class="modal-action">
-          <button class="btn btn-primary" @click="handleImportCards">导入卡密</button>
-          <form method="dialog"><button class="btn btn-ghost">取消</button></form>
+          <AppButton variant="primary" @click="handleImportCards">导入卡密</AppButton>
+          <form method="dialog"><AppButton variant="ghost">取消</AppButton></form>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop"><button>close</button></form>
@@ -50,9 +50,9 @@
         <div class="flex items-center justify-between gap-4">
           <h2 class="text-xl font-bold">库存列表</h2>
           <div class="flex gap-2">
-            <button class="btn btn-sm btn-primary" @click="addModalRef?.showModal()">新增卡密</button>
-            <button class="btn btn-sm btn-outline" @click="importModalRef?.showModal()">批量导入</button>
-            <button class="btn btn-sm btn-error btn-outline" @click="handleDeleteUnused">清空未售库存</button>
+            <AppButton size="sm" variant="primary" @click="addModalRef?.showModal()">新增卡密</AppButton>
+            <AppButton size="sm" variant="outline" @click="importModalRef?.showModal()">批量导入</AppButton>
+            <AppButton size="sm" variant="danger" @click="handleDeleteUnused">清空未售库存</AppButton>
           </div>
         </div>
         <p v-if="message" class="text-sm text-base-content/70">{{ message }}</p>
@@ -75,8 +75,8 @@
           <input v-model="filter.endDate" type="date" class="input input-sm input-bordered w-46" />
         </div>
         <div class="flex gap-3">
-          <button class="btn btn-sm btn-primary" @click="handleSearch">搜索</button>
-          <button class="btn btn-sm btn-ghost" @click="handleReset">重置</button>
+          <AppButton size="sm" variant="primary" @click="handleSearch">搜索</AppButton>
+          <AppButton size="sm" variant="ghost" @click="handleReset">重置</AppButton>
         </div>
 
         <DataTable
@@ -97,11 +97,7 @@
             {{ formatDate(value) }}
           </template>
           <template #actions="{ row }">
-            <button
-              v-if="row.status === 'UNUSED'"
-              class="btn btn-xs btn-error btn-outline"
-              @click="handleDeleteCard(row.id)"
-            >删除</button>
+            <AppButton v-if="row.status === 'UNUSED'" size="xs" variant="danger" @click="handleDeleteCard(row.id)">删除</AppButton>
           </template>
         </DataTable>
       </div>
@@ -123,6 +119,7 @@ import { onQueryCards } from "./queryCards.telefunc";
 import { onDeleteCard } from "./deleteCard.telefunc";
 import DataTable from "../../../components/DataTable.vue";
 import StatusTag from "../../../components/StatusTag.vue";
+import AppButton from "../../../components/AppButton.vue";
 import type { Data } from "./+data";
 
 const { cards, products, overview } = useData<Data>();

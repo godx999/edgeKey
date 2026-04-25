@@ -14,7 +14,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="alert.iconPath" />
         </svg>
         <span>{{ alert.message }}</span>
-        <a v-if="alert.actionHref" class="btn btn-sm" :href="alert.actionHref">{{ alert.actionLabel }}</a>
+                <AppButton v-if="alert.actionHref" size="sm" :href="alert.actionHref">{{ alert.actionLabel }}</AppButton>
       </div>
 
       <div v-if="!profile" class="rounded-box bg-base-200 p-4 text-sm text-base-content/70">
@@ -55,9 +55,7 @@
         </div>
 
         <div class="flex items-center gap-3">
-          <button class="btn btn-primary" :disabled="saving || !profile" @click="handleSave">
-            {{ saving ? "保存中..." : "保存资料" }}
-          </button>
+          <AppButton variant="primary" :loading="saving" :disabled="!profile" @click="handleSave">保存资料</AppButton>
         </div>
       </div>
     </div>
@@ -67,6 +65,7 @@
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref } from "vue";
+import AppButton from "../../../components/AppButton.vue";
 import { useData } from "vike-vue/useData";
 import type { Data } from "./+data";
 import { onSaveAdminProfile } from "./saveAdminProfile.telefunc";

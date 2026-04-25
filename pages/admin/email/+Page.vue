@@ -73,9 +73,7 @@
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-3">
-            <button class="btn btn-primary btn-sm" :disabled="savingPushSettings" @click="handleSavePushSettings">
-              {{ savingPushSettings ? '保存中...' : '保存推送设置' }}
-            </button>
+            <AppButton size="sm" variant="primary" :loading="savingPushSettings" @click="handleSavePushSettings">保存推送设置</AppButton>
             <span v-if="pushSettingsMessage" class="text-sm" :class="pushSettingsError ? 'text-error' : 'text-success'">
               {{ pushSettingsMessage }}
             </span>
@@ -91,10 +89,7 @@
               <h2 class="text-xl font-semibold">邮局列表</h2>
               <p class="text-sm text-base-content/70">支持添加多个邮局配置，可自由选择激活其中一个用于发信。</p>
             </div>
-            <button class="btn btn-primary btn-sm" @click="openCreateDialog">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-              新增邮局
-            </button>
+            <AppButton size="sm" variant="primary" @click="openCreateDialog">新增邮局</AppButton>
           </div>
 
           <div v-if="!mailboxList.length" class="text-center py-8 text-base-content/50">
@@ -134,23 +129,10 @@
                   </td>
                   <td>
                     <div class="flex items-center gap-2">
-                      <button class="btn btn-sm btn-outline" @click="openEditDialog(item)">编辑</button>
-                      <button class="btn btn-sm btn-outline" @click="openTestModal(item)">测试</button>
-                      <button
-                        class="btn btn-sm"
-                        :class="item.isEnabled ? 'btn-disabled' : 'btn-primary'"
-                        :disabled="item.isEnabled"
-                        @click="handleActivate(item)"
-                      >
-                        {{ item.isEnabled ? '当前激活' : '激活' }}
-                      </button>
-                      <button
-                        class="btn btn-sm btn-error btn-outline"
-                        :disabled="item.isEnabled"
-                        @click="handleDelete(item)"
-                      >
-                        删除
-                      </button>
+                      <AppButton size="xs" variant="outline" @click="openEditDialog(item)">编辑</AppButton>
+                      <AppButton size="xs" variant="outline" @click="openTestModal(item)">测试</AppButton>
+                      <AppButton size="xs" :variant="item.isEnabled ? 'default' : 'primary'" :disabled="item.isEnabled" @click="handleActivate(item)">{{ item.isEnabled ? '当前激活' : '激活' }}</AppButton>
+                      <AppButton size="xs" variant="danger" :disabled="item.isEnabled" @click="handleDelete(item)">删除</AppButton>
                     </div>
                   </td>
                 </tr>
@@ -305,10 +287,8 @@
         </div>
 
         <div class="modal-action">
-          <button class="btn" @click="closeConfigDialog" type="button">取消</button>
-          <button class="btn btn-primary" :disabled="savingConfig" @click="handleSaveConfig" type="button">
-            {{ savingConfig ? '保存中...' : (editingId ? '更新' : '创建') }}
-          </button>
+          <AppButton variant="ghost" @click="closeConfigDialog">取消</AppButton>
+          <AppButton variant="primary" :loading="savingConfig" @click="handleSaveConfig">{{ editingId ? '更新' : '创建' }}</AppButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
@@ -334,10 +314,8 @@
           </div>
         </div>
         <div class="modal-action">
-          <button class="btn" @click="closeTestModal" type="button">关闭</button>
-          <button class="btn btn-primary" :disabled="isTesting" @click="handleSendTest" type="button">
-            {{ isTesting ? '发送中...' : '发送' }}
-          </button>
+          <AppButton variant="ghost" @click="closeTestModal">关闭</AppButton>
+          <AppButton variant="primary" :loading="isTesting" @click="handleSendTest">发送</AppButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
@@ -352,10 +330,8 @@
         <p class="py-4">确定要删除邮局配置 <strong>{{ deletingMailboxName }}</strong> 吗？此操作不可恢复。</p>
         <div v-if="deleteMessage" class="text-sm text-error mb-2">{{ deleteMessage }}</div>
         <div class="modal-action">
-          <button class="btn" @click="closeDeleteConfirm" type="button">取消</button>
-          <button class="btn btn-error" :disabled="deleting" @click="confirmDelete" type="button">
-            {{ deleting ? '删除中...' : '确认删除' }}
-          </button>
+          <AppButton variant="ghost" @click="closeDeleteConfirm">取消</AppButton>
+          <AppButton variant="danger" :loading="deleting" @click="confirmDelete">确认删除</AppButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
@@ -369,10 +345,8 @@
         <h3 class="font-bold text-lg">确认清除</h3>
         <p class="py-4">确定要清除所有邮件日志吗？此操作不可恢复。</p>
         <div class="modal-action">
-          <button class="btn btn-sm" @click="showClearConfirm = false" type="button">取消</button>
-          <button class="btn btn-sm btn-error" :disabled="clearingLogs" @click="handleClearLogs" type="button">
-            {{ clearingLogs ? '清除中...' : '确认清除' }}
-          </button>
+          <AppButton size="sm" variant="ghost" @click="showClearConfirm = false">取消</AppButton>
+          <AppButton size="sm" variant="danger" :loading="clearingLogs" @click="handleClearLogs">确认清除</AppButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop"><button @click="showClearConfirm = false">关闭</button></form>
@@ -383,7 +357,7 @@
       <div class="card-body space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-sm text-base-content/60">共 {{ logList.length }} 条记录</span>
-          <button class="btn btn-sm btn-error btn-outline" :disabled="!logList.length" @click="showClearConfirm = true">清除日志</button>
+          <AppButton size="sm" variant="danger" :disabled="!logList.length" @click="showClearConfirm = true">清除日志</AppButton>
         </div>
         <div class="overflow-x-auto">
           <table class="table table-zebra">
@@ -465,9 +439,7 @@
             </label>
 
             <div class="flex items-center gap-3">
-              <button class="btn btn-primary" :disabled="savingTemplate === activeTemplate.scene" @click="handleSaveTemplate(activeTemplate.scene)">
-                {{ savingTemplate === activeTemplate.scene ? '保存中...' : '保存模板' }}
-              </button>
+              <AppButton variant="primary" :loading="savingTemplate === activeTemplate.scene" @click="handleSaveTemplate(activeTemplate.scene)">保存模板</AppButton>
               <span v-if="templateMessages[activeTemplate.scene]" class="text-sm" :class="templateErrors[activeTemplate.scene] ? 'text-error' : 'text-success'">
                 {{ templateMessages[activeTemplate.scene] }}
               </span>
@@ -481,6 +453,7 @@
 </template>
 
 <script setup lang="ts">
+import AppButton from "../../../components/AppButton.vue";
 import SecretInput from "../../../components/SecretInput.vue";
 import StatusTag from "../../../components/StatusTag.vue";
 import ConfirmDialog from "../../../components/ConfirmDialog.vue";

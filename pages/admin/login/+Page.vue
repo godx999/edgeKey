@@ -19,9 +19,9 @@
             <span class="label-text font-medium">密码</span>
             <input name="password" type="password" class="input input-bordered w-full" placeholder="请输入密码" required />
           </label>
-          <button class="btn btn-primary w-full" type="submit" :disabled="loading || !csrfToken">
-            {{ loading ? "初始化登录中..." : "登录后台" }}
-          </button>
+          <AppButton type="submit" variant="primary" :loading="loading" :disabled="!csrfToken" block>
+            登录后台
+          </AppButton>
         </form>
         <div class="rounded-box bg-base-200 p-3 text-xs text-base-content/70">
           首次初始化完成后，请立即前往“个人资料”修改管理员密码。
@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import AppButton from "../../../components/AppButton.vue";
 
 const csrfToken = ref("");
 const loading = ref(true);

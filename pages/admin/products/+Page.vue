@@ -6,7 +6,7 @@
           <h1 class="text-2xl font-bold">商品管理</h1>
           <p class="text-sm text-base-content/70">管理商品价格、分类、上下架状态和购买限制。</p>
         </div>
-        <a href="/admin/products/new" class="btn btn-primary btn-sm">新建商品</a>
+        <AppButton href="/admin/products/new" variant="primary" size="sm">新建商品</AppButton>
       </div>
 
       <div class="overflow-x-auto">
@@ -42,8 +42,8 @@
               </td>
               <td>
                 <div class="flex gap-2">
-                  <a :href="`/admin/products/${product.id}/edit`" class="btn btn-xs btn-outline">编辑</a>
-                  <button class="btn btn-xs btn-error btn-outline" @click="handleDelete(product)">删除</button>
+                  <AppButton :href="`/admin/products/${product.id}/edit`" variant="outline" size="xs">编辑</AppButton>
+                  <AppButton size="xs" variant="danger" @click="handleDelete(product)">删除</AppButton>
                 </div>
               </td>
             </tr>
@@ -58,6 +58,7 @@
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { ref, useTemplateRef } from "vue";
+import AppButton from "../../../components/AppButton.vue";
 import ConfirmDialog from "../../../components/ConfirmDialog.vue";
 import { useData } from "vike-vue/useData";
 import { formatCents } from "../../../lib/utils/money";

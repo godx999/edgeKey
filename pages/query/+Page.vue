@@ -56,10 +56,7 @@
           <input v-model="queryToken" class="input input-bordered w-full" placeholder="请输入查询 token" />
         </label>
         <div class="flex items-center gap-3">
-          <button class="btn btn-primary" :disabled="querying" @click="handleQuery">
-            <span v-if="querying" class="loading loading-spinner loading-xs"></span>
-            查询订单
-          </button>
+          <AppButton variant="primary" :loading="querying" @click="handleQuery">查询订单</AppButton>
           <span v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</span>
         </div>
       </div>
@@ -71,6 +68,7 @@
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../lib/app-error";
 import { ref, onMounted } from "vue";
+import AppButton from "../../components/AppButton.vue";
 import { onQueryOrder } from "./queryOrder.telefunc";
 import { getLocalOrders, type LocalOrder } from "../../lib/local-orders";
 import { formatCents } from "../../lib/utils/money";
