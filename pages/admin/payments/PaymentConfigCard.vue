@@ -17,10 +17,10 @@
           <span class="label-text font-medium">显示名称</span>
           <input v-model="form.name" class="input input-bordered w-full" />
         </label>
-        <label class="flex flex-col gap-1.5">
-          <span class="label-text font-medium">网关地址(仅需填写主域名，系统处理接口)</span>
-          <input v-model="form.baseUrl" class="input input-bordered w-full" placeholder="https://pay.example.com (末尾请勿加斜杠)" />
-        </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="label-text font-medium">网关地址(仅需填写主域名，系统处理接口)</span>
+                  <input v-model="form.baseUrl" class="input input-bordered w-full" placeholder="https://pay.example.com (末尾请勿加斜杠)" :disabled="provider === 'STRIPE'" :readonly="provider === 'STRIPE'" />
+                </label>
       </div>
 
       <component :is="formMap[provider]" v-model="extraFields" />
