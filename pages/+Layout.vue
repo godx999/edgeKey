@@ -81,6 +81,7 @@ const siteName = computed(() => pageContext.site?.siteName);
 const siteLogo = computed(() => pageContext.site?.logo || logoUrl);
 const supportContactItems = computed(() => {
   const raw = pageContext.site?.supportContact ?? "";
+  if (!raw) return [];
   return raw.split("\n").map(line => line.trim()).filter(Boolean).map(line => {
     const idx = line.indexOf("|");
     if (idx === -1) return { label: line, href: "" };
