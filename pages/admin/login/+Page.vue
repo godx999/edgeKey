@@ -3,7 +3,7 @@
     <section class="card w-full max-w-md bg-base-100 shadow-sm">
       <div class="card-body space-y-4">
         <div>
-          <p class="text-sm uppercase tracking-[0.2em] text-primary">Auth.js Admin</p>
+          <p class="text-sm uppercase tracking-[0.2em] text-primary">EdgeKey Admin</p>
           <h1 class="text-2xl font-bold">后台登录</h1>
         </div>
         <p class="text-sm text-base-content/70">

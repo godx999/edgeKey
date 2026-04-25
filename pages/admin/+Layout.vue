@@ -1,5 +1,7 @@
 <template>
-  <div v-if="needsLogin" class="flex min-h-screen items-center justify-center bg-base-200 px-4">
+  <slot v-if="isLoginPage" />
+
+  <div v-else-if="needsLogin" class="flex min-h-screen items-center justify-center bg-base-200 px-4">
     <section class="card w-full max-w-md bg-base-100 shadow-sm">
       <div class="card-body space-y-4 text-center">
         <h1 class="text-2xl font-bold">需要管理员登录</h1>
@@ -107,9 +109,9 @@
         </div>
         
         <!-- Footer Area -->
-        <div class="p-4 border-t border-base-300 mt-auto">
-          <AppButton href="/" variant="outline" block class="lg:hidden">返回前台</AppButton>
-          <div class="hidden lg:flex items-center justify-between text-xs text-base-content/50 px-2">
+        <div class="p-4 border-t border-base-300 mt-auto space-y-2">
+          <AppButton variant="outline" block @click="handleSignOut">退出登录</AppButton>
+          <div class="flex items-center justify-between text-xs text-base-content/50 px-2">
             <span>EdgeKey</span>
             <span>v1.0.0</span>
           </div>
@@ -129,6 +131,20 @@ import logoUrl from "../../assets/logo.svg";
 const pageContext = usePageContext();
 
 const currentPath = computed(() => pageContext.urlPathname);
+
+async function handleSignOut() {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/api/auth/signout";
+  const csrf = document.createElement("input");
+  csrf.type = "hidden";
+  csrf.name = "csrfToken";
+  const token = await fetch("/api/auth/csrf").then(r => r.json()).then((d: any) => d.csrfToken);
+  csrf.value = token;
+  form.appendChild(csrf);
+  document.body.appendChild(form);
+  form.submit();
+}
 const isLoginPage = computed(() => pageContext.urlPathname === "/admin/login");
 const isAdminUser = computed(() => pageContext.session?.user?.role === "admin");
 const needsLogin = computed(() => !isLoginPage.value && !isAdminUser.value);

@@ -6,6 +6,7 @@ export type LocalOrder = {
   productName: string;
   amount: number;
   createdAt: string;
+  paymentStatus?: string;
 };
 
 export function getLocalOrders(): LocalOrder[] {

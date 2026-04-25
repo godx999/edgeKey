@@ -162,6 +162,7 @@ async function handleCreateOrder() {
       productName: product.name,
       amount: result.amount,
       createdAt: new Date().toISOString(),
+      paymentStatus: result.paymentStatus ?? 'UNPAID',
     });
 
     if (result.payUrl) {

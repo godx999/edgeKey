@@ -19,28 +19,31 @@
           <p class="text-sm">暂无本地订单，在本设备下单后会自动保存在此</p>
         </div>
 
-        <ul v-else class="divide-y divide-base-200 -mx-2">
-          <li v-for="o in localOrders" :key="o.orderNo">
-            <a
-              :href="`/order/${o.orderNo}?token=${encodeURIComponent(o.queryToken)}`"
-              class="flex items-center justify-between px-2 py-3 rounded-lg hover:bg-base-200 transition-colors group"
-            >
-              <div class="space-y-0.5 min-w-0">
-                <div class="font-mono text-sm font-medium group-hover:text-primary transition-colors">{{ o.orderNo }}</div>
-                <div class="text-xs text-base-content/50 truncate">{{ o.productName }}</div>
+        <div v-else class="space-y-2 max-h-96 overflow-y-auto pr-1">
+          <a
+            v-for="o in localOrders" :key="o.orderNo"
+            :href="`/order/${o.orderNo}?token=${encodeURIComponent(o.queryToken)}`"
+            class="flex items-center justify-between px-4 py-3 rounded-xl border border-base-200 hover:border-primary/30 hover:bg-base-50 transition-all group"
+          >
+            <div class="min-w-0">
+              <div class="font-mono text-sm font-semibold group-hover:text-primary transition-colors truncate">{{ o.orderNo }}</div>
+              <div class="text-xs text-base-content/50 mt-0.5">{{ o.productName }}</div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0 ml-4">
+              <span v-if="o.paymentStatus" class="text-xs px-2 py-0.5 rounded-full font-medium"
+                :class="o.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">
+                {{ o.paymentStatus === 'PAID' ? '已支付' : '待支付' }}
+              </span>
+              <div class="text-right">
+                <div class="text-sm font-bold text-primary">{{ formatCents(o.amount) }}</div>
+                <div class="text-xs text-base-content/40">{{ formatDate(o.createdAt) }}</div>
               </div>
-              <div class="flex items-center gap-3 shrink-0 ml-4">
-                <div class="text-right space-y-0.5">
-                  <div class="text-sm font-semibold text-primary">{{ formatCents(o.amount) }}</div>
-                  <div class="text-xs text-base-content/50">{{ formatDate(o.createdAt) }}</div>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/30 group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </a>
-          </li>
-        </ul>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/20 group-hover:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
 
