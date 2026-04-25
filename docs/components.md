@@ -1,5 +1,56 @@
 # 公共组件文档
 
+## AppButton
+
+统一按钮组件，替代项目中散落的原生 `<button class="btn ...">`，解决尺寸混乱、loading 状态不一致、缺少 `type` 属性等问题。
+
+### Props
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `variant` | `"primary" \| "success" \| "danger" \| "warning" \| "ghost" \| "outline" \| "default"` | `"default"` | 颜色风格 |
+| `size` | `"xs" \| "sm" \| "md" \| "lg"` | `"md"` | 尺寸 |
+| `loading` | `boolean` | `false` | 显示左侧旋转 SVG，同时自动禁用按钮 |
+| `disabled` | `boolean` | `false` | 禁用按钮 |
+| `type` | `"button" \| "submit" \| "reset"` | `"button"` | 原生 type，默认 `button` 防止误触发表单提交 |
+| `block` | `boolean` | `false` | 宽度撑满父容器 |
+
+### 尺寸规范
+
+| 场景 | size |
+|------|------|
+| 表格行内操作（编辑、删除） | `xs` |
+| 页面工具栏、筛选区 | `sm` |
+| 表单提交、弹窗操作 | `md`（默认，不传） |
+| 页面主 CTA | `lg` |
+
+### 基本用法
+
+```components/AppButton.vue#L1-3
+<AppButton variant="primary" @click="handleSave">保存</AppButton>
+<AppButton variant="danger" size="xs" @click="handleDelete">删除</AppButton>
+<AppButton variant="ghost" @click="handleCancel">取消</AppButton>
+```
+
+### loading 状态
+
+```components/AppButton.vue#L1-3
+<AppButton variant="primary" :loading="saving" @click="handleSave">
+  保存配置
+</AppButton>
+```
+
+loading 为 `true` 时，按钮左侧显示旋转圆圈动画，按钮自动进入禁用状态，无需额外绑定 `:disabled="saving"`。
+
+### 表单提交
+
+```components/AppButton.vue#L1-3
+<AppButton type="submit" variant="primary" :loading="loading" block>
+  登录后台
+</AppButton>
+```
+
+
 ## ConfirmDialog
 
 全局确认/提示弹窗组件，替代原生 `confirm()` 和 `alert()`，基于 daisyUI `<dialog>`。
