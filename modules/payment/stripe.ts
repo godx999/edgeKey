@@ -2,6 +2,11 @@ import { externalServiceError } from "../../lib/app-error";
 import type { PaymentConfigValue } from "./types";
 import type { PaymentProviderAdapter, CreatePaymentInput, CreatePaymentResult, VerifyNotifyResult } from "./provider";
 
+// Stripe zero-decimal currencies: amount is already in the smallest unit (no ×100 needed)
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  "bif","clp","djf","gnf","jpy","kmf","krw","mga","pyg","rwf","ugx","vnd","vuv","xaf","xof","xpf",
+]);
+
 export function createStripeAdapter(config: PaymentConfigValue): PaymentProviderAdapter {
   const secretKey = config.stripeSecretKey ?? "";
   const webhookSecret = config.stripeWebhookSecret ?? "";
@@ -26,7 +31,7 @@ export function createStripeAdapter(config: PaymentConfigValue): PaymentProvider
 
   return {
     async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
-      const amountCents = Math.round(input.amount);
+      const amountCents = ZERO_DECIMAL_CURRENCIES.has(currency) ? Math.round(input.amount / 100) : Math.round(input.amount);
       const session = await stripeRequest("/v1/checkout/sessions", {
         "payment_method_types[]": "card",
         "line_items[0][price_data][currency]": currency,
@@ -89,7 +94,9 @@ export function createStripeAdapter(config: PaymentConfigValue): PaymentProvider
 
       const session = event.data.object;
       const orderNo = session.metadata?.orderNo as string | undefined;
-      const amountTotal = typeof session.amount_total === "number" ? session.amount_total / 100 : undefined;
+      const amountTotal = typeof session.amount_total === "number"
+        ? ZERO_DECIMAL_CURRENCIES.has(currency) ? session.amount_total * 100 : session.amount_total
+        : undefined;
 
       return {
         isValid: true,
