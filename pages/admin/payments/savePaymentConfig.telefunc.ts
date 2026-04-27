@@ -16,6 +16,9 @@ export async function onSavePaymentConfig(input: {
   alipayAppId?: string;
   alipayPrivateKey?: string;
   alipayPublicKey?: string;
+  stripeSecretKey?: string;
+  stripeWebhookSecret?: string;
+  stripeCurrency?: string;
 }) {
   assertAdminAccess();
   return savePaymentConfig(input);

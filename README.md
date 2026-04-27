@@ -300,8 +300,11 @@ bun dev
 4. 在搜索框输入关键词过滤日志，例如：
    - `email.notify_order_paid.config_failed` — 支付后邮件配置获取失败
    - `email.send.failed` — 邮件发送失败
+   - `email.order_paid.failed` — 支付成功后发送邮件通知失败
    - `payment.notify.route_exception` — 支付回调路由异常
    - `payment.notify.context_missing` — 支付回调缺少数据库上下文
+   - `payment.notify.diagnostic` — 支付回调校验异常诊断（签名错误、金额不匹配等）
+   - `bepusdt.verify_notify` — BEpusdt 回调原始 payload（info 级别）
 
 ## 鸣谢
 

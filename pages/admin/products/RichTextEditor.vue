@@ -212,12 +212,15 @@
         </button>
         <button type="button" class="toolbar-button toolbar-button-icon" title="清除格式" aria-label="清除格式" @mousedown.prevent @click="editor?.chain().focus().clearNodes().unsetAllMarks().run()">
           <svg viewBox="0 0 20 20" class="toolbar-icon" aria-hidden="true"><path d="M4.47 4.47a.75.75 0 0 1 1.06 0L10 8.94l4.47-4.47a.75.75 0 1 1 1.06 1.06L11.06 10l4.47 4.47a.75.75 0 1 1-1.06 1.06L10 11.06l-4.47 4.47a.75.75 0 1 1-1.06-1.06L8.94 10 4.47 5.53a.75.75 0 0 1 0-1.06Z" fill="currentColor"/></svg>
+        </button><button type="button" class="toolbar-button toolbar-button-wide" :class="htmlMode ? 'toolbar-button-active' : ''" title="HTML 源码" @mousedown.prevent @click="toggleHtmlMode">
+          <span>HTML</span>
         </button>
       </div>
     </div>
 
     <div class="bg-base-100 px-5 py-4">
-      <EditorContent :editor="editor" class="tiptap-editor" />
+      <textarea v-if="htmlMode" v-model="htmlDraft" class="textarea textarea-bordered w-full font-mono text-sm min-h-48" @input="onHtmlInput" />
+      <EditorContent v-else :editor="editor" class="tiptap-editor" />
     </div>
   </div>
 </template>
@@ -258,6 +261,8 @@ const highlightColors = [
 
 const rootRef = ref<HTMLElement | null>(null);
 const openPanel = ref<null | "text" | "highlight" | "link" | "image">(null);
+const htmlMode = ref(false);
+const htmlDraft = ref("");
 const linkDraft = ref("");
 const imageDraft = ref("");
 
@@ -333,6 +338,20 @@ watch(
   },
   { immediate: true },
 );
+
+function toggleHtmlMode() {
+  if (!htmlMode.value) {
+    htmlDraft.value = editor.value?.getHTML() ?? "";
+  } else {
+    editor.value?.commands.setContent(htmlDraft.value, false);
+    emit("update:modelValue", htmlDraft.value);
+  }
+  htmlMode.value = !htmlMode.value;
+}
+
+function onHtmlInput() {
+  emit("update:modelValue", htmlDraft.value);
+}
 
 function toggleHeading(level: 2 | 3) {
   editor.value?.chain().focus().toggleHeading({ level }).run();

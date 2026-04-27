@@ -11,7 +11,7 @@
           <option value="">全部支付方式</option>
           <option value="EPAY">易支付</option>
           <option value="ALIPAY">支付宝</option>
-          <option value="BEPUSDT">USDT</option>
+          <option value="BEPUSDT">BEpusdt</option>
         </select>
         <select v-model="filter.status" class="select select-sm select-bordered w-32">
           <option value="">全部状态</option>
@@ -22,8 +22,8 @@
         </select>
         <input v-model="filter.startDate" type="date" class="input input-sm input-bordered w-40" />
         <input v-model="filter.endDate" type="date" class="input input-sm input-bordered w-40" />
-        <button class="btn btn-sm btn-primary" @click="handleSearch">搜索</button>
-        <button class="btn btn-sm btn-ghost" @click="handleReset">重置</button>
+        <AppButton size="sm" variant="primary" @click="handleSearch">搜索</AppButton>
+        <AppButton size="sm" variant="ghost" @click="handleReset">重置</AppButton>
       </div>
 
       <DataTable
@@ -38,14 +38,14 @@
         <template #paymentProvider="{ value }">{{ getPaymentProviderLabel(value) }}</template>
         <template #status="{ row }">
           <div class="flex flex-wrap gap-1">
-            <span class="badge" :class="orderStatusClass(row.status)">{{ getOrderStatusLabel(row.status) }}</span>
-            <span class="badge" :class="paymentStatusClass(row.paymentStatus)">{{ getPaymentStatusLabel(row.paymentStatus) }}</span>
-            <span class="badge" :class="deliveryStatusClass(row.deliveryStatus)">{{ getDeliveryStatusLabel(row.deliveryStatus) }}</span>
+            <StatusTag :type="getOrderStatusType(row.status)">{{ getOrderStatusLabel(row.status) }}</StatusTag>
+            <StatusTag :type="getPaymentStatusType(row.paymentStatus)">{{ getPaymentStatusLabel(row.paymentStatus) }}</StatusTag>
+            <StatusTag :type="getDeliveryStatusType(row.deliveryStatus)">{{ getDeliveryStatusLabel(row.deliveryStatus) }}</StatusTag>
           </div>
         </template>
         <template #createdAt="{ value }">{{ new Date(value).toLocaleString() }}</template>
         <template #actions="{ row }">
-          <a :href="`/admin/orders/${row.id}`" class="btn btn-xs btn-outline">详情</a>
+          <AppButton :href="`/admin/orders/${row.id}`" size="xs" variant="outline">详情</AppButton>
         </template>
       </DataTable>
     </div>
@@ -54,10 +54,12 @@
 
 <script setup lang="ts">
 import { reactive, ref } from "vue";
+import AppButton from "../../../components/AppButton.vue";
 import { useData } from "vike-vue/useData";
 import DataTable from "../../../components/DataTable.vue";
 import { formatCents } from "../../../lib/utils/money";
-import { getDeliveryStatusLabel, getOrderStatusLabel, getPaymentProviderLabel, getPaymentStatusLabel } from "../../../lib/utils/order-status";
+import { getDeliveryStatusLabel, getDeliveryStatusType, getOrderStatusLabel, getOrderStatusType, getPaymentProviderLabel, getPaymentStatusLabel, getPaymentStatusType } from "../../../lib/utils/order-status";
+import StatusTag from "../../../components/StatusTag.vue";
 import { onQueryOrders } from "./queryOrders.telefunc";
 import type { Data } from "./+data";
 
@@ -98,23 +100,7 @@ async function handleSearch() { await fetchPage(1); }
 /**
  * 获取订单状态对应的样式类，采用 badge-soft 提升可读性
  */
-function orderStatusClass(s: string) {
-  return "badge-soft " + ({ PENDING: "badge-warning", PAID: "badge-info", DELIVERED: "badge-success", CLOSED: "badge-ghost", FAILED: "badge-error" }[s] ?? "badge-outline");
-}
 
-/**
- * 获取支付状态对应的样式类
- */
-function paymentStatusClass(s: string) {
-  return "badge-soft " + ({ UNPAID: "badge-warning", PAID: "badge-success", FAILED: "badge-error" }[s] ?? "badge-outline");
-}
-
-/**
- * 获取发货状态对应的样式类
- */
-function deliveryStatusClass(s: string) {
-  return "badge-soft " + ({ NOT_DELIVERED: "badge-warning", DELIVERED: "badge-success", FAILED: "badge-error" }[s] ?? "badge-outline");
-}
 
 async function handleReset() {
   filter.orderNo = "";

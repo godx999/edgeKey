@@ -6,7 +6,7 @@
     </label>
     <label class="flex flex-col gap-1.5">
       <span class="label-text font-medium">Key</span>
-      <input v-model="modelValue.key" class="input input-bordered w-full" />
+      <SecretInput v-model="modelValue.key" />
     </label>
   </div>
   <p class="text-xs text-base-content/60">
@@ -15,5 +15,6 @@
 </template>
 
 <script setup lang="ts">
+import SecretInput from "../../../../components/SecretInput.vue";
 defineProps<{ modelValue: Record<string, any> }>();
 </script>

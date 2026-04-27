@@ -9,9 +9,9 @@
             <p class="text-sm text-base-content/70">订单号：{{ order.orderNo }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <span class="badge badge-outline">{{ getOrderStatusLabel(order.status) }}</span>
-            <span class="badge badge-outline">{{ getPaymentStatusLabel(order.paymentStatus) }}</span>
-            <span class="badge badge-outline">{{ getDeliveryStatusLabel(order.deliveryStatus) }}</span>
+            <StatusTag :type="getOrderStatusType(order.status)">{{ getOrderStatusLabel(order.status) }}</StatusTag>
+            <StatusTag :type="getPaymentStatusType(order.paymentStatus)">{{ getPaymentStatusLabel(order.paymentStatus) }}</StatusTag>
+            <StatusTag :type="getDeliveryStatusType(order.deliveryStatus)">{{ getDeliveryStatusLabel(order.deliveryStatus) }}</StatusTag>
           </div>
         </div>
         <div class="grid gap-4 md:grid-cols-2">
@@ -29,12 +29,8 @@
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-3 pt-2">
-          <button class="btn btn-sm btn-primary" :disabled="order.deliveryStatus === 'DELIVERED' || order.paymentStatus !== 'PAID'" @click="handleRedeliver">
-            手动补发
-          </button>
-          <button class="btn btn-sm btn-outline" :disabled="order.status === 'CLOSED'" @click="handleClose">
-            关闭订单
-          </button>
+          <AppButton size="sm" variant="primary" :disabled="order.deliveryStatus === 'DELIVERED' || order.paymentStatus !== 'PAID'" @click="handleRedeliver">手动补发</AppButton>
+          <AppButton size="sm" variant="outline" :disabled="order.status === 'CLOSED'" @click="handleClose">关闭订单</AppButton>
           <span v-if="actionMessage" class="text-sm text-success">{{ actionMessage }}</span>
           <span v-if="actionError" class="text-sm text-error">{{ actionError }}</span>
         </div>
@@ -57,7 +53,7 @@
     <article class="card bg-base-100 shadow-sm">
       <div class="card-body">
         <h2 class="card-title">支付日志</h2>
-        <div v-if="order.paymentLogs.length" class="space-y-3">
+        <div v-if="order.paymentLogs.length" class="space-y-3 max-h-96 overflow-y-auto">
           <div v-for="log in order.paymentLogs" :key="log.id" class="rounded-box bg-base-200 p-3 text-sm">
             <div class="font-medium">{{ log.eventType }}</div>
             <div class="text-xs text-base-content/60">{{ getVerifyStatusLabel(log.verifyStatus) }} · {{ formatDate(log.createdAt) }}</div>
@@ -77,11 +73,16 @@ import { useData } from "vike-vue/useData";
 import { formatCents } from "../../../../lib/utils/money";
 import {
   getDeliveryStatusLabel,
+  getDeliveryStatusType,
   getOrderStatusLabel,
+  getOrderStatusType,
   getPaymentProviderLabel,
   getPaymentStatusLabel,
+  getPaymentStatusType,
   getVerifyStatusLabel,
 } from "../../../../lib/utils/order-status";
+import StatusTag from "../../../../components/StatusTag.vue";
+import AppButton from "../../../../components/AppButton.vue";
 import { onCloseOrder } from "./closeOrder.telefunc";
 import { onRedeliver } from "./redeliver.telefunc";
 import type { Data } from "./+data";

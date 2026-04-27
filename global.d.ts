@@ -1,3 +1,6 @@
+declare const __GIT_HASH__: string;
+declare const __APP_VERSION__: string;
+
 import { Session } from "@auth/core/types";
 import type { PrismaClient } from "./generated/prisma/client";
 import type { getPublicSiteInfo } from "./modules/site/service";

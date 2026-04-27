@@ -1,10 +1,12 @@
 <template>
-  <div v-if="needsLogin" class="flex min-h-screen items-center justify-center bg-base-200 px-4">
+  <slot v-if="isLoginPage" />
+
+  <div v-else-if="needsLogin" class="flex min-h-screen items-center justify-center bg-base-200 px-4">
     <section class="card w-full max-w-md bg-base-100 shadow-sm">
       <div class="card-body space-y-4 text-center">
         <h1 class="text-2xl font-bold">需要管理员登录</h1>
         <p class="text-sm text-base-content/70">正在跳转到后台登录页，如果没有自动跳转，请手动点击下面按钮。</p>
-        <a class="btn btn-primary" :href="`/admin/login?redirect=${encodeURIComponent(currentPath)}`">前往登录</a>
+        <AppButton variant="primary" :href="`/admin/login?redirect=${encodeURIComponent(currentPath)}`">前往登录</AppButton>
       </div>
     </section>
   </div>
@@ -29,12 +31,14 @@
         <div>
           <div class="breadcrumbs text-sm text-base-content/60 mt-0.5">
             <ul>
-              <li>首页</li>
-              <li v-if="currentPageName">{{ currentPageName }}</li>
+              <li><a href="/admin">Home</a></li>
+              <li v-if="breadcrumbs?.length > 0"><a :href="breadcrumbs[0].href">{{ breadcrumbs[0].name }}</a>
+              </li>
+              <li v-if="breadcrumbs?.length > 1">{{ breadcrumbs[1].name }}</li>
             </ul>
           </div>
         </div>
-        
+
         <ul class="menu menu-horizontal bg-base-200 rounded-box p-1 gap-1">
           <li class="tooltip tooltip-bottom z-50" data-tip="语言: 中文">
             <a>
@@ -69,14 +73,14 @@
           <slot />
         </div>
       </main>
-    </div> 
-    
+    </div>
+
     <div class="drawer-side z-50">
-      <label for="admin-drawer" aria-label="close sidebar" class="drawer-overlay"></label> 
+      <label for="admin-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
       <aside class="bg-base-100 min-h-screen w-72 flex flex-col border-r border-base-300 shadow-sm">
         <!-- Logo Area -->
-        <a 
-          href="/admin" 
+        <a
+          href="/admin"
           class="p-6 pb-2 flex items-center gap-2 hover:bg-base-200 transition-colors block"
         >
           <img :src="siteLogo" height="50" width="50" alt="logo" />
@@ -87,29 +91,37 @@
             </p>
           </div>
         </a>
-        
+
         <!-- Navigation -->
         <div class="p-4 flex-1 overflow-y-auto">
           <ul class="menu menu-md w-full gap-1 p-0">
             <li><a href="/admin" :class="{'active': currentPath === '/admin'}">仪表盘</a></li>
-            <li><a href="/admin/categories" :class="{'active': currentPath.startsWith('/admin/categories')}">分类管理</a></li>
-            <li><a href="/admin/products" :class="{'active': currentPath.startsWith('/admin/products')}">商品管理</a></li>
-            <li><a href="/admin/cards" :class="{'active': currentPath.startsWith('/admin/cards')}">卡密管理</a></li>
-            <li><a href="/admin/orders" :class="{'active': currentPath.startsWith('/admin/orders')}">订单管理</a></li>
-            <li><a href="/admin/payments" :class="{'active': currentPath.startsWith('/admin/payments')}">支付配置</a></li>
-            <li><a href="/admin/email" :class="{'active': currentPath.startsWith('/admin/email')}">邮件管理</a></li>
-            <li><a href="/admin/settings" :class="{'active': currentPath.startsWith('/admin/settings')}">站点设置</a></li>
-            <!-- <li><a href="/admin/security" :class="{'active': currentPath.startsWith('/admin/security')}">安全配置</a></li> -->
-            <li><a href="/admin/profile" :class="{'active': currentPath.startsWith('/admin/profile')}">个人资料</a></li>
+            <li><a href="/admin/categories" :class="{'active': currentPath?.startsWith('/admin/categories')}">分类管理</a></li>
+            <li><a href="/admin/products" :class="{'active': currentPath?.startsWith('/admin/products')}">商品管理</a></li>
+            <li><a href="/admin/cards" :class="{'active': currentPath?.startsWith('/admin/cards')}">卡密管理</a></li>
+            <li><a href="/admin/orders" :class="{'active': currentPath?.startsWith('/admin/orders')}">订单管理</a></li>
+            <li><a href="/admin/payments" :class="{'active': currentPath?.startsWith('/admin/payments')}">支付配置</a></li>
+            <li><a href="/admin/email" :class="{'active': currentPath?.startsWith('/admin/email')}">邮件管理</a></li>
+            <li><a href="/admin/settings" :class="{'active': currentPath?.startsWith('/admin/settings')}">站点设置</a></li>
+            <!-- <li><a href="/admin/security" :class="{'active': currentPath?.startsWith('/admin/security')}">安全配置</a></li> -->
+            <li><a href="/admin/profile" :class="{'active': currentPath?.startsWith('/admin/profile')}">个人资料</a></li>
           </ul>
         </div>
-        
+
         <!-- Footer Area -->
-        <div class="p-4 border-t border-base-300 mt-auto">
-          <a href="/" class="btn btn-outline btn-block lg:hidden">返回前台</a>
-          <div class="hidden lg:flex items-center justify-between text-xs text-base-content/50 px-2">
-            <span>EdgeKey</span>
-            <span>v1.0.0</span>
+        <div class="p-4 border-t border-base-300 mt-auto space-y-2">
+          <AppButton variant="outline" block @click="handleSignOut">退出登录</AppButton>
+          <div class="flex items-center justify-between text-xs text-base-content/50 px-2">
+            <a class="cursor-default" target="_blank" href="https://github.com/34892002/edgeKey">edgeKey</a>
+            <div class="">
+              <button class="hover:text-primary transition-colors mr-2" @click="checkUpdate" :title="updateTip" >
+                v{{ appVersion }}-{{ gitHash }}
+              </button>
+              <div class="inline-grid *:[grid-area:1/1]">
+                <div class="animate-ping status" :class="statusColor"></div>
+                <div class="status" :class="statusColor"></div>
+              </div>
+            </div>
           </div>
         </div>
       </aside>
@@ -118,32 +130,90 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+import AppButton from "../../components/AppButton.vue";
 import { usePageContext } from "vike-vue/usePageContext";
 
 import logoUrl from "../../assets/logo.svg";
 
 const pageContext = usePageContext();
 
-const currentPath = computed(() => pageContext.urlPathname);
-const isLoginPage = computed(() => pageContext.urlPathname === "/admin/login");
+const currentPath = computed(() => pageContext.urlPathname ?? "");
+const gitHash = __GIT_HASH__;
+const appVersion = __APP_VERSION__;
+
+const statusColor = ref('status-success');
+const updateTip = ref('点击检查更新');
+const lastCheckTime = ref(0);
+const COOLDOWN_MS = 10 * 60 * 1000;
+
+async function checkUpdate() {
+  const now = Date.now();
+  if (now - lastCheckTime.value < COOLDOWN_MS) {
+    // const remaining = Math.ceil((COOLDOWN_MS - (now - lastCheckTime.value)) / 60000);
+    updateTip.value = '请勿频繁查询';
+    return;
+  }
+  lastCheckTime.value = now;
+  statusColor.value = 'status-warning';
+  updateTip.value = '检查中...';
+  try {
+    const pkgRes = await fetch('https://raw.githubusercontent.com/34892002/edgeKey/main/package.json');
+    const pkg = await pkgRes.json() as { version?: string };
+    if (!pkg.version) throw new Error('invalid response');
+    const isLatest = pkg.version === appVersion;
+    statusColor.value = isLatest ? 'status-success' : 'status-error';
+    updateTip.value = isLatest ? `已是最新版本` : `有新版本 v${pkg.version}`;
+  } catch {
+    statusColor.value = 'status-error';
+    updateTip.value = '检查失败，请稍后重试';
+  }
+}
+
+async function handleSignOut() {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/api/auth/signout";
+  const csrf = document.createElement("input");
+  csrf.type = "hidden";
+  csrf.name = "csrfToken";
+  const token = await fetch("/api/auth/csrf").then(r => r.json()).then((d: any) => d.csrfToken);
+  csrf.value = token;
+  form.appendChild(csrf);
+  document.body.appendChild(form);
+  form.submit();
+}
+const isLoginPage = computed(() => (pageContext.urlPathname ?? "") === "/admin/login");
 const isAdminUser = computed(() => pageContext.session?.user?.role === "admin");
 const needsLogin = computed(() => !isLoginPage.value && !isAdminUser.value);
 const siteLogo = computed(() => pageContext.site?.logo || logoUrl);
 
-const currentPageName = computed(() => {
-  const path = currentPath.value;
-  if (path === "/admin") return "仪表盘";
-  if (path.startsWith("/admin/categories")) return "分类管理";
-  if (path.startsWith("/admin/products")) return "商品管理";
-  if (path.startsWith("/admin/cards")) return "卡密管理";
-  if (path.startsWith("/admin/orders")) return "订单管理";
-  if (path.startsWith("/admin/payments")) return "支付配置";
-  if (path.startsWith("/admin/email")) return "邮件管理";
-  if (path.startsWith("/admin/settings")) return "站点设置";
-  if (path.startsWith("/admin/security")) return "安全配置";
-  if (path.startsWith("/admin/profile")) return "个人资料";
-  return "";
+type Crumb = { name: string; href?: string };
+
+const BREADCRUMB_ROUTES: { pattern: string; crumbs: Crumb[] }[] = [
+  { pattern: "/admin/products/new",      crumbs: [{ name: "商品管理", href: "/admin/products" }, { name: "新建商品" }] },
+  { pattern: "/admin/products/:id/edit", crumbs: [{ name: "商品管理", href: "/admin/products" }, { name: "编辑商品" }] },
+  { pattern: "/admin/products",          crumbs: [{ name: "商品管理" }] },
+  { pattern: "/admin/orders/:id",        crumbs: [{ name: "订单管理", href: "/admin/orders" }, { name: "订单详情" }] },
+  { pattern: "/admin/orders",            crumbs: [{ name: "订单管理" }] },
+  { pattern: "/admin/categories",        crumbs: [{ name: "分类管理" }] },
+  { pattern: "/admin/cards",             crumbs: [{ name: "卡密管理" }] },
+  { pattern: "/admin/payments",          crumbs: [{ name: "支付配置" }] },
+  { pattern: "/admin/email",             crumbs: [{ name: "邮件管理" }] },
+  { pattern: "/admin/settings",          crumbs: [{ name: "站点设置" }] },
+  { pattern: "/admin/security",          crumbs: [{ name: "安全配置" }] },
+  { pattern: "/admin/profile",           crumbs: [{ name: "个人资料" }] },
+];
+
+function matchRoute(pattern: string, path: string) {
+  const re = new RegExp("^" + pattern.replace(/:[^/]+/g, "[^/]+") + "(/.*)?$");
+  return re.test(path);
+}
+
+const breadcrumbs = computed((): Crumb[] => {
+  const path = currentPath.value ?? "";
+  const route = BREADCRUMB_ROUTES.find(r => matchRoute(r.pattern, path));
+  return route ? route.crumbs : [];
 });
 
 onMounted(() => {

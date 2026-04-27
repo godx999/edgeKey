@@ -6,11 +6,12 @@
     </label>
     <label class="flex flex-col gap-1.5">
       <span class="label-text font-medium">App Secret</span>
-      <input v-model="modelValue.appSecret" class="input input-bordered w-full" />
+      <SecretInput v-model="modelValue.appSecret" />
     </label>
   </div>
 </template>
 
 <script setup lang="ts">
+import SecretInput from "../../../../components/SecretInput.vue";
 defineProps<{ modelValue: Record<string, any> }>();
 </script>

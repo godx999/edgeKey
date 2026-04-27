@@ -82,10 +82,8 @@
       </label>
 
       <div class="flex items-center gap-3">
-        <button class="btn btn-primary" :disabled="saving" @click="handleSave">
-          {{ saving ? "保存中..." : "保存商品" }}
-        </button>
-        <a href="/admin/products" class="btn btn-ghost">返回列表</a>
+        <AppButton variant="primary" :loading="saving" @click="handleSave">保存商品</AppButton>
+        <AppButton href="/admin/products" variant="ghost">返回列表</AppButton>
         <span v-if="saved" class="badge badge-success">已保存</span>
         <span v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</span>
       </div>
@@ -96,6 +94,7 @@
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref } from "vue";
+import AppButton from "../../../components/AppButton.vue";
 import { formatCents } from "../../../lib/utils/money";
 import RichTextEditor from "./RichTextEditor.vue";
 import { onSaveProduct } from "./saveProduct.telefunc";

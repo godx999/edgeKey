@@ -17,10 +17,10 @@
           <span class="label-text font-medium">显示名称</span>
           <input v-model="form.name" class="input input-bordered w-full" />
         </label>
-        <label class="flex flex-col gap-1.5">
-          <span class="label-text font-medium">网关地址</span>
-          <input v-model="form.baseUrl" class="input input-bordered w-full" placeholder="https://example.com" />
-        </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="label-text font-medium">网关地址(仅需填写主域名，系统处理接口)</span>
+                  <input v-model="form.baseUrl" class="input input-bordered w-full" placeholder="https://pay.example.com (末尾请勿加斜杠)" :disabled="provider === 'STRIPE'" :readonly="provider === 'STRIPE'" />
+                </label>
       </div>
 
       <component :is="formMap[provider]" v-model="extraFields" />
@@ -37,9 +37,7 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <button class="btn btn-primary" :disabled="saving" @click="handleSave">
-          {{ saving ? '保存中...' : '保存配置' }}
-        </button>
+        <AppButton variant="primary" :loading="saving" @click="handleSave">保存配置</AppButton>
         <span v-if="saved" class="badge badge-success">已保存</span>
         <span v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</span>
       </div>
@@ -49,14 +47,16 @@
 
 <script setup lang="ts">
 import { reactive, ref } from "vue";
+import AppButton from "../../../components/AppButton.vue";
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { onSavePaymentConfig } from "./savePaymentConfig.telefunc";
 import BEpusdtForm from "./forms/BEpusdtForm.vue";
 import EpayForm from "./forms/EpayForm.vue";
 import AlipayForm from "./forms/AlipayForm.vue";
+import StripeForm from "./forms/StripeForm.vue";
 import type { PaymentProvider, PaymentConfigValue } from "../../../modules/payment/types";
 
-const formMap = { BEPUSDT: BEpusdtForm, EPAY: EpayForm, ALIPAY: AlipayForm };
+const formMap = { BEPUSDT: BEpusdtForm, EPAY: EpayForm, ALIPAY: AlipayForm, STRIPE: StripeForm };
 
 const emit = defineEmits<{ saved: [value: typeof props.initialValue] }>();
 
@@ -67,7 +67,7 @@ const props = defineProps<{
 }>();
 
 const form = reactive({
-  name: props.initialValue?.name ?? (props.provider === 'BEPUSDT' ? 'USDT' : '聚合支付'),
+  name: props.initialValue?.name ?? (props.provider === 'BEPUSDT' ? 'BEpusdt' : '聚合支付'),
   isEnabled: props.initialValue?.isEnabled ?? false,
   baseUrl: props.initialValue?.baseUrl ?? '',
   notifyUrl: props.initialValue?.notifyUrl ?? '',
@@ -79,7 +79,9 @@ const extraFields = reactive(
     ? { appId: props.initialValue?.appId ?? '', appSecret: props.initialValue?.appSecret ?? '' }
     : props.provider === 'ALIPAY'
       ? { alipayAppId: props.initialValue?.alipayAppId ?? '', alipayPrivateKey: props.initialValue?.alipayPrivateKey ?? '', alipayPublicKey: props.initialValue?.alipayPublicKey ?? '' }
-      : { pid: props.initialValue?.pid ?? '', key: props.initialValue?.key ?? '' }
+      : props.provider === 'STRIPE'
+        ? { stripeSecretKey: props.initialValue?.stripeSecretKey ?? '', stripeWebhookSecret: props.initialValue?.stripeWebhookSecret ?? '', stripeCurrency: props.initialValue?.stripeCurrency ?? 'cny' }
+        : { pid: props.initialValue?.pid ?? '', key: props.initialValue?.key ?? '' }
 );
 
 const saving = ref(false);
@@ -100,6 +102,10 @@ async function handleSave() {
     if (props.provider === 'BEPUSDT') {
       (extraFields as any).appId = result.appId ?? '';
       (extraFields as any).appSecret = result.appSecret ?? '';
+    } else if (props.provider === 'STRIPE') {
+      (extraFields as any).stripeSecretKey = (result as any).stripeSecretKey ?? '';
+      (extraFields as any).stripeWebhookSecret = (result as any).stripeWebhookSecret ?? '';
+      (extraFields as any).stripeCurrency = (result as any).stripeCurrency ?? 'cny';
     } else if (props.provider === 'ALIPAY') {
       (extraFields as any).alipayAppId = (result as any).alipayAppId ?? '';
       (extraFields as any).alipayPrivateKey = (result as any).alipayPrivateKey ?? '';

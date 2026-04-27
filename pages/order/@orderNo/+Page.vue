@@ -9,9 +9,9 @@
             <h1 class="text-2xl font-bold">{{ order.orderNo }}</h1>
           </div>
           <div class="flex gap-2">
-            <span class="badge badge-outline">{{ getOrderStatusLabel(order.status) }}</span>
-            <span class="badge badge-outline">{{ getPaymentStatusLabel(order.paymentStatus) }}</span>
-            <span class="badge badge-outline">{{ getDeliveryStatusLabel(order.deliveryStatus) }}</span>
+            <StatusTag :type="getOrderStatusType(order.status)">{{ getOrderStatusLabel(order.status) }}</StatusTag>
+            <StatusTag :type="getPaymentStatusType(order.paymentStatus)">{{ getPaymentStatusLabel(order.paymentStatus) }}</StatusTag>
+            <StatusTag :type="getDeliveryStatusType(order.deliveryStatus)">{{ getDeliveryStatusLabel(order.deliveryStatus) }}</StatusTag>
           </div>
         </div>
       </div>
@@ -28,9 +28,7 @@
             <div class="flex justify-between"><span>支付方式</span><span>{{ getPaymentProviderLabel(order.paymentProvider) }}</span></div>
           </div>
           <div v-if="order.paymentStatus === 'UNPAID'" class="mt-4">
-            <button class="btn btn-primary btn-sm" :disabled="paying" @click="handleContinuePay">
-              {{ paying ? '拉起中...' : '继续支付' }}
-            </button>
+            <AppButton size="sm" variant="primary" :loading="paying" @click="handleContinuePay">继续支付</AppButton>
             <p v-if="paymentError" class="mt-2 text-sm text-error">{{ paymentError }}</p>
           </div>
         </div>
@@ -52,9 +50,11 @@
 <script setup lang="ts">
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { ref, onMounted } from "vue";
+import AppButton from "../../../components/AppButton.vue";
 import { useData } from "vike-vue/useData";
 import { formatCents } from "../../../lib/utils/money";
-import { getDeliveryStatusLabel, getOrderStatusLabel, getPaymentProviderLabel, getPaymentStatusLabel } from "../../../lib/utils/order-status";
+import { getDeliveryStatusLabel, getDeliveryStatusType, getOrderStatusLabel, getOrderStatusType, getPaymentProviderLabel, getPaymentStatusLabel, getPaymentStatusType } from "../../../lib/utils/order-status";
+import StatusTag from "../../../components/StatusTag.vue";
 import { onCreatePayment } from "./createPayment.telefunc";
 import { onQueryAlipayPayment } from "./queryAlipayPayment.telefunc";
 import type { Data } from "./+data";

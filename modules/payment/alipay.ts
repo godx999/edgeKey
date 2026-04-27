@@ -16,7 +16,7 @@ export interface AlipayConfig {
   returnUrl?: string;
 }
 
-const DEFAULT_GATEWAY = "https://openapi.alipay.com/gateway.do";
+
 
 function pemToBase64(pem: string) {
   return pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
@@ -65,7 +65,7 @@ function buildSignString(params: Record<string, string>) {
 export function createAlipayAdapter(config: AlipayConfig): PaymentProviderAdapter {
   return {
     async createPayment(input) {
-      const gateway = config.baseUrl?.trim().replace(/\/+$/, "") || DEFAULT_GATEWAY;
+            const gateway = `${config.baseUrl?.trim().replace(/\/+$/, "")}/gateway.do`;
 
       if (!config.alipayAppId || !config.alipayPrivateKey) {
         throw badRequestError("支付宝配置不完整", "ALIPAY_CONFIG_INCOMPLETE");
@@ -136,7 +136,7 @@ export async function queryAlipayTrade(config: AlipayConfig, outTradeNo: string)
     throw badRequestError("支付宝配置不完整", "ALIPAY_CONFIG_INCOMPLETE");
   }
 
-  const gateway = config.baseUrl?.trim().replace(/\/+$/, "") || DEFAULT_GATEWAY;
+  const gateway = `${config.baseUrl?.trim().replace(/\/+$/, "")}/gateway.do`;
   const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
   const params: Record<string, string> = {
     app_id: config.alipayAppId,

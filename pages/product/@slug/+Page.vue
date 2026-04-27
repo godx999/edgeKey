@@ -71,9 +71,7 @@
 
 
 
-          <button class="btn btn-primary" :disabled="submitting || !paymentMethods.length" @click="handleCreateOrder">
-            {{ submitting ? '提交中...' : '提交订单' }}
-          </button>
+          <AppButton variant="primary" :loading="submitting" :disabled="!paymentMethods.length" @click="handleCreateOrder">提交订单</AppButton>
           <p v-if="!paymentMethods.length" class="text-sm text-warning">当前没有可用支付方式，请联系管理员启用支付配置。</p>
           <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
         </div>
@@ -83,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import AppButton from "../../../components/AppButton.vue";
 import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref } from "vue";
 import { useData } from "vike-vue/useData";
@@ -163,6 +162,7 @@ async function handleCreateOrder() {
       productName: product.name,
       amount: result.amount,
       createdAt: new Date().toISOString(),
+      paymentStatus: result.paymentStatus ?? 'UNPAID',
     });
 
     if (result.payUrl) {

@@ -7,7 +7,7 @@
       </div>
     </div>
 
-    <div role="tablist" class="tabs tabs-box">
+    <div role="tablist" class="tabs tabs-border">
       <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'stats' }" @click="activeTab = 'stats'">统计</a>
       <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'config' }" @click="activeTab = 'config'">配置</a>
       <a role="tab" class="tab" :class="{ 'tab-active': activeTab === 'list' }" @click="activeTab = 'list'">日志</a>
@@ -73,9 +73,7 @@
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-3">
-            <button class="btn btn-primary btn-sm" :disabled="savingPushSettings" @click="handleSavePushSettings">
-              {{ savingPushSettings ? '保存中...' : '保存推送设置' }}
-            </button>
+            <AppButton size="sm" variant="primary" :loading="savingPushSettings" @click="handleSavePushSettings">保存推送设置</AppButton>
             <span v-if="pushSettingsMessage" class="text-sm" :class="pushSettingsError ? 'text-error' : 'text-success'">
               {{ pushSettingsMessage }}
             </span>
@@ -91,10 +89,7 @@
               <h2 class="text-xl font-semibold">邮局列表</h2>
               <p class="text-sm text-base-content/70">支持添加多个邮局配置，可自由选择激活其中一个用于发信。</p>
             </div>
-            <button class="btn btn-primary btn-sm" @click="openCreateDialog">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-              新增邮局
-            </button>
+            <AppButton size="sm" variant="primary" @click="openCreateDialog">新增邮局</AppButton>
           </div>
 
           <div v-if="!mailboxList.length" class="text-center py-8 text-base-content/50">
@@ -119,7 +114,7 @@
                   <td class="font-mono text-sm">{{ item.id }}</td>
                   <td>{{ item.name || '-' }}</td>
                   <td>
-                    <span class="badge badge-outline">{{ getChannelLabel(item.provider) }}</span>
+                    <StatusTag variant="outline">{{ getChannelLabel(item.provider) }}</StatusTag>
                   </td>
                   <td>{{ item.fromEmail || '-' }}</td>
                   <td>
@@ -128,29 +123,16 @@
                     <span v-else>{{ (item as any).cloudflareBindingName || '-' }}</span>
                   </td>
                   <td>
-                    <span class="badge" :class="item.isEnabled ? 'badge-success' : 'badge-ghost'">
+                    <StatusTag :type="item.isEnabled ? 'success' : 'default'">
                       {{ item.isEnabled ? '已激活' : '未激活' }}
-                    </span>
+                    </StatusTag>
                   </td>
                   <td>
                     <div class="flex items-center gap-2">
-                      <button class="btn btn-sm btn-outline" @click="openEditDialog(item)">编辑</button>
-                      <button class="btn btn-sm btn-outline" @click="openTestModal(item)">测试</button>
-                      <button
-                        class="btn btn-sm"
-                        :class="item.isEnabled ? 'btn-disabled' : 'btn-primary'"
-                        :disabled="item.isEnabled"
-                        @click="handleActivate(item)"
-                      >
-                        {{ item.isEnabled ? '当前激活' : '激活' }}
-                      </button>
-                      <button
-                        class="btn btn-sm btn-error btn-outline"
-                        :disabled="item.isEnabled"
-                        @click="handleDelete(item)"
-                      >
-                        删除
-                      </button>
+                      <AppButton size="xs" variant="outline" @click="openEditDialog(item)">编辑</AppButton>
+                      <AppButton size="xs" variant="outline" @click="openTestModal(item)">测试</AppButton>
+                      <AppButton size="xs" :variant="item.isEnabled ? 'default' : 'primary'" :disabled="item.isEnabled" @click="handleActivate(item)">{{ item.isEnabled ? '当前激活' : '激活' }}</AppButton>
+                      <AppButton size="xs" variant="danger" :disabled="item.isEnabled" @click="handleDelete(item)">删除</AppButton>
                     </div>
                   </td>
                 </tr>
@@ -212,11 +194,11 @@
             </label>
             <label class="flex flex-col gap-1.5">
               <span class="label-text font-medium">API Key</span>
-              <input v-model="configForm.apiKey" class="input input-bordered w-full" />
+              <SecretInput v-model="configForm.apiKey" />
             </label>
             <label class="flex flex-col gap-1.5">
               <span class="label-text font-medium">Secret Key</span>
-              <input v-model="configForm.secretKey" class="input input-bordered w-full" :disabled="configForm.apiProvider !== 'MAILJET'" :placeholder="configForm.apiProvider === 'MAILJET' ? 'Mailjet Secret Key' : 'Brevo 不需要该字段'" />
+              <SecretInput v-model="configForm.secretKey" :disabled="configForm.apiProvider !== 'MAILJET'" :placeholder="configForm.apiProvider === 'MAILJET' ? 'Mailjet Secret Key' : 'Brevo 不需要该字段'" />
             </label>
             <label class="flex flex-col gap-1.5">
               <span class="label-text font-medium">超时(ms)</span>
@@ -253,7 +235,7 @@
               </label>
               <label class="flex flex-col gap-1.5">
                 <span class="label-text font-medium">SMTP 密码</span>
-                <input v-model="configForm.smtpPassword" class="input input-bordered w-full" />
+                <SecretInput v-model="configForm.smtpPassword" />
               </label><label class="flex flex-col gap-1.5">
                 <span class="label-text font-medium">认证方式</span>
                 <select v-model="configForm.smtpAuthType" class="select select-bordered w-full">
@@ -305,10 +287,8 @@
         </div>
 
         <div class="modal-action">
-          <button class="btn" @click="closeConfigDialog" type="button">取消</button>
-          <button class="btn btn-primary" :disabled="savingConfig" @click="handleSaveConfig" type="button">
-            {{ savingConfig ? '保存中...' : (editingId ? '更新' : '创建') }}
-          </button>
+          <AppButton variant="ghost" @click="closeConfigDialog">取消</AppButton>
+          <AppButton variant="primary" :loading="savingConfig" @click="handleSaveConfig">{{ editingId ? '更新' : '创建' }}</AppButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
@@ -334,10 +314,8 @@
           </div>
         </div>
         <div class="modal-action">
-          <button class="btn" @click="closeTestModal" type="button">关闭</button>
-          <button class="btn btn-primary" :disabled="isTesting" @click="handleSendTest" type="button">
-            {{ isTesting ? '发送中...' : '发送' }}
-          </button>
+          <AppButton variant="ghost" @click="closeTestModal">关闭</AppButton>
+          <AppButton variant="primary" :loading="isTesting" @click="handleSendTest">发送</AppButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
@@ -352,10 +330,8 @@
         <p class="py-4">确定要删除邮局配置 <strong>{{ deletingMailboxName }}</strong> 吗？此操作不可恢复。</p>
         <div v-if="deleteMessage" class="text-sm text-error mb-2">{{ deleteMessage }}</div>
         <div class="modal-action">
-          <button class="btn" @click="closeDeleteConfirm" type="button">取消</button>
-          <button class="btn btn-error" :disabled="deleting" @click="confirmDelete" type="button">
-            {{ deleting ? '删除中...' : '确认删除' }}
-          </button>
+          <AppButton variant="ghost" @click="closeDeleteConfirm">取消</AppButton>
+          <AppButton variant="danger" :loading="deleting" @click="confirmDelete">确认删除</AppButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
@@ -369,10 +345,8 @@
         <h3 class="font-bold text-lg">确认清除</h3>
         <p class="py-4">确定要清除所有邮件日志吗？此操作不可恢复。</p>
         <div class="modal-action">
-          <button class="btn btn-sm" @click="showClearConfirm = false" type="button">取消</button>
-          <button class="btn btn-sm btn-error" :disabled="clearingLogs" @click="handleClearLogs" type="button">
-            {{ clearingLogs ? '清除中...' : '确认清除' }}
-          </button>
+          <AppButton size="sm" variant="ghost" @click="showClearConfirm = false">取消</AppButton>
+          <AppButton size="sm" variant="danger" :loading="clearingLogs" @click="handleClearLogs">确认清除</AppButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop"><button @click="showClearConfirm = false">关闭</button></form>
@@ -383,7 +357,7 @@
       <div class="card-body space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-sm text-base-content/60">共 {{ logList.length }} 条记录</span>
-          <button class="btn btn-sm btn-error btn-outline" :disabled="!logList.length" @click="showClearConfirm = true">清除日志</button>
+          <AppButton size="sm" variant="danger" :disabled="!logList.length" @click="showClearConfirm = true">清除日志</AppButton>
         </div>
         <div class="overflow-x-auto">
           <table class="table table-zebra">
@@ -410,9 +384,9 @@
                 <td class="whitespace-nowrap">{{ configs.find(c => c.provider === log.provider)?.name || '-' }}</td>
                 <td class="whitespace-nowrap">{{ getSceneLabel(log.scene) }}</td>
                 <td>
-                  <span class="badge whitespace-nowrap" :class="log.status === 'SUCCESS' ? 'badge-success' : 'badge-error'">
+                  <StatusTag class="whitespace-nowrap" :type="log.status === 'SUCCESS' ? 'success' : 'danger'">
                     {{ log.status === 'SUCCESS' ? '成功' : '失败' }}
-                  </span>
+                  </StatusTag>
                 </td>
                 <td class="whitespace-nowrap">{{ log.toEmail }}</td>
                 <td class="max-w-xs truncate" :title="log.subject">{{ log.subject }}</td>
@@ -465,9 +439,7 @@
             </label>
 
             <div class="flex items-center gap-3">
-              <button class="btn btn-primary" :disabled="savingTemplate === activeTemplate.scene" @click="handleSaveTemplate(activeTemplate.scene)">
-                {{ savingTemplate === activeTemplate.scene ? '保存中...' : '保存模板' }}
-              </button>
+              <AppButton variant="primary" :loading="savingTemplate === activeTemplate.scene" @click="handleSaveTemplate(activeTemplate.scene)">保存模板</AppButton>
               <span v-if="templateMessages[activeTemplate.scene]" class="text-sm" :class="templateErrors[activeTemplate.scene] ? 'text-error' : 'text-success'">
                 {{ templateMessages[activeTemplate.scene] }}
               </span>
@@ -477,11 +449,16 @@
       </div>
     </section>
   </section>
+  <ConfirmDialog ref="confirmRef" />
 </template>
 
 <script setup lang="ts">
+import AppButton from "../../../components/AppButton.vue";
+import SecretInput from "../../../components/SecretInput.vue";
+import StatusTag from "../../../components/StatusTag.vue";
+import ConfirmDialog from "../../../components/ConfirmDialog.vue";
 import { normalizeTelefuncError } from "../../../lib/app-error";
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, useTemplateRef } from "vue";
 import { useData } from "vike-vue/useData";
 import { onSaveEmailConfig, onDeleteEmailConfig, onSaveEmailPushSettings, onActivateEmailProvider, onClearEmailLogs } from "./saveEmailConfig.telefunc";
 import { onSaveEmailTemplate } from "./saveEmailTemplate.telefunc";
@@ -524,6 +501,7 @@ type MailboxItem = {
 const { configs, templates, logs: initialLogs, metrics, pushSettings: initialPushSettings } = useData<Data>();
 
 const activeTab = ref<"stats" | "config" | "list" | "template">("stats");
+const confirmRef = useTemplateRef<InstanceType<typeof ConfirmDialog>>("confirmRef");
 
 // ===================== Mailbox list =====================
 const logList = reactive([...initialLogs]);
@@ -708,7 +686,7 @@ async function handleClearLogs() {
     logList.splice(0);
     showClearConfirm.value = false;
   } catch (error) {
-    alert(normalizeTelefuncError(error, "清除失败"));
+    await confirmRef.value?.alert({ title: "错误", message: normalizeTelefuncError(error, "清除失败") });
   } finally {
     clearingLogs.value = false;
   }
@@ -825,7 +803,7 @@ async function handleActivate(item: MailboxItem) {
       m.isEnabled = m.id === item.id;
     }
   } catch (error) {
-    alert(normalizeTelefuncError(error, "激活失败"));
+    await confirmRef.value?.alert({ title: "错误", message: normalizeTelefuncError(error, "激活失败") });
   }
 }
 
