@@ -302,3 +302,11 @@ bun dev
    - `email.send.failed` — 邮件发送失败
    - `payment.notify.route_exception` — 支付回调路由异常
    - `payment.notify.context_missing` — 支付回调缺少数据库上下文
+
+## 鸣谢
+
+感谢 [Linux.do](https://linux.do/) 、[NodeSeek](https://www.nodeseek.com/) 社区支持。
+
+感谢下列开源项目
+- [Ebpusdt](https://github.com/v03413/BEpusdt) — 加密货币交易支持
+- [worker-mailer](https://github.com/zou-yu/worker-mailer) — Workers环境SMTP邮件支持
