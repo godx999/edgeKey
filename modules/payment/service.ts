@@ -275,8 +275,9 @@ export async function createPaymentForOrder(orderNo: string, prisma?: PrismaClie
   return result;
 }
 
-function formatNotifyLogMessage(source: string, message?: string | null) {
-  return `source=${source}, ${message || "unknown"}`;
+function formatNotifyLogMessage(source: string, message?: string | null, status?: string | null) {
+  const base = `source=${source}, ${message || "unknown"}`;
+  return status ? `${base}; status=${status}` : base;
 }
 
 function redactSensitiveValue(value: string) {
@@ -314,6 +315,7 @@ async function createNotifyLog(prisma: PrismaClient, input: {
   verifyStatus: "PENDING" | "VERIFIED" | "FAILED";
   source: string;
   message?: string | null;
+  status?: string | null;
 }) {
   await createPaymentLogRecord(prisma, {
     orderId: input.orderId,
@@ -323,7 +325,7 @@ async function createNotifyLog(prisma: PrismaClient, input: {
     eventType: input.eventType ?? "NOTIFY",
     rawPayload: input.rawPayload,
     verifyStatus: input.verifyStatus,
-    message: formatNotifyLogMessage(input.source, input.message),
+    message: formatNotifyLogMessage(input.source, input.message, input.status),
   });
 }
 
@@ -413,6 +415,7 @@ export async function handlePaymentNotify(
       verifyStatus: "FAILED",
       source,
       message: verified.message,
+      status: verified.status,
     });
     writePaymentNotifyDiagnostic({
       provider,
@@ -436,6 +439,7 @@ export async function handlePaymentNotify(
       verifyStatus: "FAILED",
       source,
       message: "missing orderNo",
+      status: verified.status,
     });
     writePaymentNotifyDiagnostic({
       provider,
@@ -459,6 +463,7 @@ export async function handlePaymentNotify(
       verifyStatus: "FAILED",
       source,
       message: "missing order",
+      status: verified.status,
     });
     writePaymentNotifyDiagnostic({
       provider,
@@ -485,6 +490,7 @@ export async function handlePaymentNotify(
       verifyStatus: "FAILED",
       source,
       message: `expected=${order.amount}, actual=${verified.amount}`,
+      status: verified.status,
     });
 
     writePaymentNotifyDiagnostic({
@@ -512,6 +518,7 @@ export async function handlePaymentNotify(
       verifyStatus: "VERIFIED",
       source,
       message: "already paid",
+      status: verified.status,
     });
 
     return {
@@ -549,6 +556,7 @@ export async function handlePaymentNotify(
       verifyStatus: "VERIFIED",
       source,
       message: "ok",
+      status: verified.status,
     });
 
     if (order.contactType === "EMAIL" && order.contactValue) {
@@ -591,6 +599,7 @@ export async function handlePaymentNotify(
         verifyStatus: "VERIFIED",
         source,
         message: "delivery failed",
+        status: verified.status,
       });
       return {
         ok: false,
@@ -624,6 +633,7 @@ export async function handlePaymentNotify(
     verifyStatus: "VERIFIED",
     source,
     message: "ok",
+    status: verified.status,
   });
 
   return {

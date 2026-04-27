@@ -296,6 +296,7 @@ export async function getAdminOrderById(id: number, prisma?: PrismaClient) {
       eventType: item.eventType,
       verifyStatus: item.verifyStatus,
       message: item.message,
+      rawPayload: item.rawPayload,
       createdAt: item.createdAt.toISOString(),
     })),
   };

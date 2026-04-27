@@ -17,7 +17,7 @@ export function registerBepusdtRoutes(app: Hono) {
         return c.text("fail", 500);
       }
       const result = await handlePaymentNotify("BEPUSDT", payload, universalContext.prisma, "notify");
-      return c.text(result.ok ? "ok" : "fail");
+      return c.text(result.ok ? "success" : "fail");
     } catch (error) {
       logger.error(error instanceof Error ? error : new Error(String(error)), {
         event: "payment.notify.route_exception",

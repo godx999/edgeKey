@@ -55,12 +55,25 @@
         <h2 class="card-title">支付日志</h2>
         <div v-if="order.paymentLogs.length" class="space-y-3 max-h-96 overflow-y-auto">
           <div v-for="log in order.paymentLogs" :key="log.id" class="rounded-box bg-base-200 p-3 text-sm">
-            <div class="font-medium">{{ log.eventType }}</div>
+            <div class="flex items-center justify-between gap-2">
+              <div class="font-medium">{{ log.eventType }}</div>
+              <button v-if="log.rawPayload" class="btn btn-xs btn-ghost" @click="openRawPayload(log.rawPayload)">详情</button>
+            </div>
             <div class="text-xs text-base-content/60">{{ getVerifyStatusLabel(log.verifyStatus) }} · {{ formatDate(log.createdAt) }}</div>
             <div v-if="log.message" class="mt-1">{{ log.message }}</div>
           </div>
         </div>
         <p v-else class="text-sm text-base-content/60">暂无支付日志。</p>
+
+        <dialog ref="payloadDialogRef" class="modal">
+          <div class="modal-box max-w-2xl">
+            <h3 class="font-bold text-lg mb-3">原始 Payload</h3>
+            <pre class="bg-base-200 rounded-box p-3 text-xs overflow-x-auto whitespace-pre-wrap break-all">{{ formattedPayload }}</pre>
+            <div class="modal-action">
+              <form method="dialog"><button class="btn btn-sm">关闭</button></form>
+            </div></div>
+          <form method="dialog" class="modal-backdrop"><button>关闭</button></form>
+        </dialog>
       </div>
     </article>
   </section>
@@ -90,6 +103,17 @@ import type { Data } from "./+data";
 const { order } = useData<Data>();
 const actionMessage = ref("");
 const actionError = ref("");
+const payloadDialogRef = ref<HTMLDialogElement | null>(null);
+const formattedPayload = ref("");
+
+function openRawPayload(raw: string) {
+  try {
+    formattedPayload.value = JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    formattedPayload.value = raw;
+  }
+  payloadDialogRef.value?.showModal();
+}
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString();
