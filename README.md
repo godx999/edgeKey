@@ -1,3 +1,6 @@
+[![English](https://img.shields.io/badge/English-Click-yellow)](README-en.md)
+[![中文文档](https://img.shields.io/badge/中文文档-点击查看-orange)](README.md)
+
 # EdgeKey
 
 EdgeKey 是一套有vike框架开发，可直接部署到 Cloudflare 的一体化全栈卡密商城系统：同一套代码同时包含前端页面、SSR 渲染、后端 API / 数据变更入口，并由 Cloudflare Workers 运行。
