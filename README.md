@@ -323,3 +323,7 @@ bun dev
 感谢下列开源项目
 - [Ebpusdt](https://github.com/v03413/BEpusdt) — 加密货币交易支持
 - [worker-mailer](https://github.com/zou-yu/worker-mailer) — Workers环境SMTP邮件支持
+
+🏝️ 社区交流
+Telegram 群组：https://t.me/edgeKeyChannel
+Telegram 频道：https://t.me/edgeKeyGroup
