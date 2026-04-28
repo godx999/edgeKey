@@ -299,6 +299,7 @@ Thanks to the following open source projects:
 - [BEpusdt](https://github.com/v03413/BEpusdt) — Cryptocurrency transaction support
 - [worker-mailer](https://github.com/zou-yu/worker-mailer) — SMTP email support in Workers environment
 
-🏝️ Get Involved
-Join our Group: https://t.me/edgeKeyChannel
-Subscribe to Channel: https://t.me/edgeKeyGroup
+
+## 🏝️ Get Involved
+- Join our Group: https://t.me/edgeKeyChannel
+- Subscribe to Channel: https://t.me/edgeKeyGroup
