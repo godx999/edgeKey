@@ -1,7 +1,7 @@
 import { getContext } from "telefunc";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { badRequestError, notFoundError, unauthorizedError } from "../../lib/app-error";
-import { hashAdminPassword } from "./crypto";
+import { hashAdminPassword, verifyAdminPassword } from "./crypto";
 
 export function assertAdminAccess() {
   const context = getContext<{ session?: { user?: { role?: string } } }>();
@@ -80,13 +80,14 @@ export async function updateAdminProfile(input: {
       throw badRequestError("新密码长度不能少于 8 位", "PASSWORD_TOO_SHORT");
     }
 
-    const currentHash = hashAdminPassword(currentPassword);
-    if (currentHash !== admin.passwordHash) {
+    const currentValid = await verifyAdminPassword(currentPassword, admin.passwordHash);
+    if (!currentValid) {
       throw badRequestError("当前密码不正确", "CURRENT_PASSWORD_INVALID");
     }
 
-    const newHash = hashAdminPassword(newPassword);
-    if (newHash === admin.passwordHash) {
+    const newHash = await hashAdminPassword(newPassword);
+    const newSameAsOld = await verifyAdminPassword(newPassword, admin.passwordHash);
+    if (newSameAsOld) {
       throw badRequestError("新密码不能与当前密码相同", "PASSWORD_UNCHANGED");
     }
 

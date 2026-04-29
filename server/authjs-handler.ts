@@ -1,11 +1,12 @@
 import { Auth, type AuthConfig, createActionURL, setEnvDefaults } from "@auth/core";
+import { CredentialsSignin } from "@auth/core/errors";
 import CredentialsProvider from "@auth/core/providers/credentials";
 import type { Session } from "@auth/core/types";
 import { enhance, type UniversalHandler, type UniversalMiddleware } from "@universal-middleware/core";
 import { PrismaClient } from "../generated/prisma/client";
 import { internalServerError, rateLimitError } from "../lib/app-error";
 import { logger } from "../lib/logger";
-import { hashAdminPassword } from "../modules/auth/crypto";
+import { verifyAdminPassword, hashAdminPassword } from "../modules/auth/crypto";
 
 const ADMIN_ROLE = "admin" as const;
 const loginAttemptStore = new Map<string, { count: number; expiresAt: number }>();
@@ -75,9 +76,22 @@ async function findAdminByCredentials(prisma: PrismaClient, username: string, pa
     return null;
   }
 
-  const passwordHash = hashAdminPassword(password);
-  if (admin.passwordHash !== passwordHash) {
+  const valid = await verifyAdminPassword(password, admin.passwordHash);
+  if (!valid) {
     return null;
+  }
+
+  // 旧 SHA-256 哈希自动升级为 bcrypt
+  if (!admin.passwordHash.startsWith("$2b$") && !admin.passwordHash.startsWith("$2a$")) {
+    try {
+      const newHash = await hashAdminPassword(password);
+      await prisma.admin.update({ where: { username }, data: { passwordHash: newHash } });
+    } catch (e) {
+      logger.error("auth.password_upgrade.failed", { error: e });
+      const err = new CredentialsSignin("哈希字符串升级失败，请参考官网文档重置管理员密码");
+      err.code = "password_upgrade_failed";
+      throw err;
+    }
   }
 
   return {

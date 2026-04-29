@@ -141,6 +141,20 @@ The project uses admin username/password login. Before using in production:
 - Production command: `wrangler secret put AUTH_SECRET`
 - Default admin credentials: `admin / admin123456` — **change your password immediately after first login.**
 
+### Forgot Your Password?
+
+Reset your password to `admin123456` via the D1 Console in Cloudflare Dashboard:
+
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → **Storage & Databases** → **D1** → click `edgekey-db`
+2. Open the **Console** tab
+3. Run the following SQL:
+
+```sql
+UPDATE Admin SET passwordHash = '$2b$10$viMe8RgcpM30gmmF9OpOcuA/QgleSIUk5VRtqjOulfSIbgK5jQCI6' WHERE username = 'admin';
+```
+
+4. Log in and change your password immediately.
+
 ## Local Development
 
 Bun is recommended (npm/pnpm/yarn also work).

@@ -138,6 +138,20 @@ sed -i 's/"database_name": "edgekey-db"/"database_name": "edgekey-db", "database
 - 生产环境配置AUTH_SECRET命令 `wrangler secret put AUTH_SECRET`
 - 默认管理员账号为 `admin / admin123456`，首次登录后请立即修改密码
 
+### 忘记密码？
+
+在 Cloudflare Dashboard 中通过 D1 Console 将密码重置为 `admin123456`：
+
+1. 进入 [dash.cloudflare.com](https://dash.cloudflare.com) → **Storage & Databases** → **D1** → 点击 `edgekey-db`
+2. 顶部 tab → **Console**
+3. 执行以下 SQL：
+
+```sql
+UPDATE Admin SET passwordHash = '$2b$10$viMe8RgcpM30gmmF9OpOcuA/QgleSIUk5VRtqjOulfSIbgK5jQCI6' WHERE username = 'admin';
+```
+
+4. 登录后台后立即修改密码
+
 ## 本地开发
 
 推荐使用 Bun（也可替换为 npm/pnpm/yarn）。

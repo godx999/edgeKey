@@ -5,7 +5,7 @@
 
 -- 管理员账号
 INSERT INTO "Admin" ("username", "passwordHash", "nickname", "status", "updatedAt")
-VALUES ('admin', 'ac0e7d037817094e9e0b4441f9bae3209d67b02fa484917065f71b16109a1a78', '管理员', 'ACTIVE', CURRENT_TIMESTAMP)
+VALUES ('admin', '$2b$10$viMe8RgcpM30gmmF9OpOcuA/QgleSIUk5VRtqjOulfSIbgK5jQCI6', '管理员', 'ACTIVE', CURRENT_TIMESTAMP)
 ON CONFLICT("username") DO NOTHING;
 
 -- 站点设置

@@ -40,12 +40,15 @@ const csrfToken = ref("");
 const loading = ref(true);
 const errorMsg = ref("");
 
-const ERROR_MAP: Record<string, string> = {CredentialsSignin: "用户名或密码错误",
+const ERROR_MAP: Record<string, string> = {
+  CredentialsSignin: "用户名或密码错误",
+  password_upgrade_failed: "登录成功但密码升级失败，请重置密码后重试",
 };
 
 onMounted(async () => {
-  const error = new URLSearchParams(location.search).get("error");
-  if (error) errorMsg.value = ERROR_MAP[error] ?? "登录失败，请重试";
+  const params = new URLSearchParams(location.search);
+  const code = params.get("code") ?? params.get("error");
+  if (code) errorMsg.value = ERROR_MAP[code] ?? "登录失败，请重试";
   try {
     const response = await fetch("/api/auth/csrf", {
       credentials: "same-origin",
