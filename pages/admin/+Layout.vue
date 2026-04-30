@@ -161,13 +161,31 @@ async function checkUpdate() {
     const pkgRes = await fetch('https://raw.githubusercontent.com/34892002/edgeKey/main/package.json');
     const pkg = await pkgRes.json() as { version?: string };
     if (!pkg.version) throw new Error('invalid response');
-    const isLatest = pkg.version === appVersion;
+    
+    // 这里只比较 package.json 中的纯版本号，不参与 git hash 展示串。
+    const isLatest = compareVersions(appVersion, pkg.version) >= 0;
+    
     statusColor.value = isLatest ? 'status-success' : 'status-error';
     updateTip.value = isLatest ? `已是最新版本` : `有新版本 v${pkg.version}`;
   } catch {
     statusColor.value = 'status-error';
     updateTip.value = '检查失败，请稍后重试';
   }
+}
+
+// 比较 package.json 的纯版本号，例如 1.2.1 与 1.2.2。
+function compareVersions(v1: string, v2: string): number {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  const len = Math.max(parts1.length, parts2.length);
+  
+  for (let i = 0; i < len; i++) {
+    const num1 = parts1[i] || 0;
+    const num2 = parts2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+  return 0;
 }
 
 async function handleSignOut() {
