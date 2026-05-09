@@ -8,6 +8,7 @@ import { getAdminProductById } from "../catalog/service";
 import { createPaymentForOrder, handlePaymentNotify } from "../payment/service";
 import { closeOrderRecord, createOrderRecord, findOrderById, findOrderWithProduct, listOrderRecords } from "./repository";
 import { generateOrderNo, generateQueryToken } from "./number";
+import { logger } from "../../lib/logger";
 
 function getOrderContext() {
   return getContext<{ prisma: PrismaClient }>();
@@ -300,4 +301,76 @@ export async function getAdminOrderById(id: number, prisma?: PrismaClient) {
       createdAt: item.createdAt.toISOString(),
     })),
   };
+}
+
+/**
+ * 自动关闭过期未支付订单（由 Cron Trigger 定时调用）
+ *
+ * 逻辑：
+ * 1. 查询所有 status=PENDING、paymentStatus=UNPAID、且创建时间超过 TTL 的订单
+ * 2. 将其 status 更新为 CLOSED，设置 closedAt
+ * 3. 为每个被关闭的订单写入一条 PaymentLog（eventType=AUTO_CLOSE）
+ * 4. 不修改 paymentStatus，避免与延迟到达的支付回调产生竞态冲突
+ *
+ * 竞态安全说明：
+ * - 如果支付回调在 auto-close 之后到达，updateOrderPayment 的 WHERE
+ *   条件 `paymentStatus = "UNPAID"` 仍然匹配（因为 auto-close 不动该字段），
+ *   回调会将订单重新打开为 PAID 并正常发货。
+ * - 该场景会在 PaymentLog 中留下 "(reopened from CLOSED)" 标记。
+ */
+const ORDER_EXPIRE_MINUTES = 30;
+
+export async function autoCloseExpiredOrders(prisma: PrismaClient) {
+  const cutoff = new Date(Date.now() - ORDER_EXPIRE_MINUTES * 60 * 1000);
+
+  // 先查出即将被关闭的订单（需要 orderId、orderNo、paymentProvider 用于写日志）
+  const expiredOrders = await prisma.order.findMany({
+    where: {
+      status: "PENDING",
+      paymentStatus: "UNPAID",
+      createdAt: { lt: cutoff },
+    },
+    select: {
+      id: true,
+      orderNo: true,
+      paymentProvider: true,
+    },
+    take: 100,
+  });
+
+  if (expiredOrders.length === 0) {
+    return 0;
+  }
+
+  // 批量关闭
+  await prisma.order.updateMany({
+    where: {
+      id: { in: expiredOrders.map((o) => o.id) },
+    },
+    data: {
+      status: "CLOSED",
+      closedAt: new Date(),
+    },
+  });
+
+  // 为每个被关闭的订单写一条 PaymentLog
+  await prisma.paymentLog.createMany({
+    data: expiredOrders.map((order) => ({
+      orderId: order.id,
+      provider: order.paymentProvider,
+      orderNo: order.orderNo,
+      eventType: "AUTO_CLOSE",
+      rawPayload: "{}",
+      verifyStatus: "PENDING" as const,
+      message: `订单超时未支付，已自动关闭（${ORDER_EXPIRE_MINUTES}分钟）`,
+    })),
+  });
+
+  logger.info("auto_close_expired_orders", {
+    closedCount: expiredOrders.length,
+    expireMinutes: ORDER_EXPIRE_MINUTES,
+    orderNos: expiredOrders.map((o) => o.orderNo),
+  });
+
+  return expiredOrders.length;
 }

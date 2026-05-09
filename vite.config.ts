@@ -18,7 +18,8 @@ const gitHash = (() => {
 
 export default defineConfig({
   define: {
-    __GIT_HASH__: JSON.stringify(gitHash),__APP_VERSION__: JSON.stringify(pkg.version ?? "1.0.0"),
+    __GIT_HASH__: JSON.stringify(gitHash),
+    __APP_VERSION__: JSON.stringify(pkg.version ?? "1.0.0"),
   },
   plugins: [vike(), tailwindcss(), telefunc(), vue()],
   server: {

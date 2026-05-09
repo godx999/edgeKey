@@ -3,15 +3,22 @@ import { getPrismaForD1 } from "./prisma-factory";
 import { telefuncHandler } from "./telefunc-handler";
 import { prismaMiddleware } from "./prisma-middleware";
 import { registerApiRoutes } from "./routes";
+import { scheduled } from "./scheduled";
 import { createRequestContext, runWithRequestContext } from "../lib/request-context";
 import { apply, serve } from "@photonjs/hono";
 import { Hono } from "hono";
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-export default startApp() as unknown;
-
-function startApp() {
+/**
+ * 创建并配置 Hono 应用实例。
+ *
+ * Photon 虚拟模块使用（通过 serve() 包装）。
+ *
+ * 此应用只提供 fetch handler。Cron Trigger 的 scheduled handler
+ * 在下方通过 entry.scheduled 挂到 serve() 返回值上。
+ */
+export function createApp() {
   const app = new Hono();
   const apiApp = new Hono();
 
@@ -69,7 +76,13 @@ function startApp() {
     telefuncHandler,
   ]);
 
-  return serve(app, {
-    port,
-  });
+  return app;
 }
+
+// Photon 虚拟模块入口 把 scheduled 挂到 serve() 的返回值上，Photon 做 { ...entry } spread 时
+// 会自动包含它，最终 CF Workers 的 default export 上就有了 scheduled。
+// export { scheduled } 防止 Rollup tree-shake 掉未被直接调用的函数。
+const entry = serve(createApp(), { port }) as unknown as Record<string, unknown>;
+entry.scheduled = scheduled;
+export default entry;
+export { scheduled };

@@ -345,6 +345,8 @@ bun dev
 
 当邮件发送异常或支付回调出现问题时，可在 Cloudflare Dashboard 查看 Workers 运行日志：
 
+> 实时线上环境日志: bunx wrangler tail --format pretty
+
 1. 进入 [dash.cloudflare.com](https://dash.cloudflare.com)
 2. 左侧菜单 → **Workers & Pages** → 点击 **edgekey**
 3. 顶部 tab → **Observability**

@@ -547,6 +547,8 @@ export async function handlePaymentNotify(
 
     // 先记录首次成功回调，再执行发货，避免并发下后到的回调先写出
     // `already paid`，而首个成功回调的 `ok` 反而更晚落库。
+    // 如果订单之前被 auto-close 关闭过（status=CLOSED），在日志中标注重开。
+    const reopenNote = order.status === "CLOSED" ? " (reopened from CLOSED)" : "";
     await createNotifyLog(prisma, {
       orderId: order.id,
       provider,
@@ -555,7 +557,7 @@ export async function handlePaymentNotify(
       rawPayload,
       verifyStatus: "VERIFIED",
       source,
-      message: "ok",
+      message: `ok${reopenNote}`,
       status: verified.status,
     });
 

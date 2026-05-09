@@ -14,5 +14,8 @@
 			"database_name": "edgekey-db",
 			"migrations_dir": "prisma/migrations"
 		}
-	]
+	],
+	"triggers": {
+		"crons": ["*/5 * * * *"]
+	}
 }
