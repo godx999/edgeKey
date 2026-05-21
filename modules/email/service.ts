@@ -91,6 +91,9 @@ const defaultCloudflareConfig: EmailCloudflareConfigValue = {
   ...defaultPushSettings,
 };
 
+// 默认邮件模板配置
+// 注意：此处的模板内容需要与 scripts/seed.sql 中的邮件模板保持一致
+// 用途：1. 用于"恢复默认"功能 2. 作为 seed.sql 的内容来源
 const defaultTemplates: Record<EmailScene, EmailTemplateValue> = {
   TEST: {
     scene: "TEST",
@@ -103,21 +106,21 @@ const defaultTemplates: Record<EmailScene, EmailTemplateValue> = {
     scene: "ORDER_PAID",
     name: "支付成功通知",
     subject: "[{{siteName}}] 订单 {{orderNo}} 支付成功",
-    content: "您的订单已支付成功。\n\n订单号：{{orderNo}}\n商品：{{productName}}\n金额：{{amount}}\n查询地址：{{queryUrl}}\n\n{{footerText}}",
+    content: "您的订单已支付成功。\n\n订单号：{{orderNo}}\n商品：{{productName}}\n金额：{{amount}}\n备注：{{buyerNote}}\n查询地址：{{queryUrl}}\n\n{{footerText}}",
     isEnabled: true,
   },
   DELIVERY_SUCCESS: {
     scene: "DELIVERY_SUCCESS",
     name: "发货成功通知",
     subject: "[{{siteName}}] 订单 {{orderNo}} 已发货",
-    content: "您的订单已完成发货。\n\n订单号：{{orderNo}}\n商品：{{productName}}\n数量：{{quantity}}\n发货内容：\n{{deliveryItems}}\n\n查询地址：{{queryUrl}}\n{{supportContact}}",
+    content: "您的订单已完成发货。\n\n订单号：{{orderNo}}\n商品：{{productName}}\n数量：{{quantity}}\n备注：{{buyerNote}}\n发货内容：\n{{deliveryItems}}\n\n查询地址：{{queryUrl}}\n客服联系方式：{{supportContact}}",
     isEnabled: true,
   },
   DELIVERY_FAILED: {
     scene: "DELIVERY_FAILED",
     name: "发货失败通知",
     subject: "[{{siteName}}] 订单 {{orderNo}} 发货失败",
-    content: "订单发货失败，请尽快处理。\n\n订单号：{{orderNo}}\n商品：{{productName}}\n失败原因：{{errorMessage}}\n\n查询地址：{{queryUrl}}\n{{supportContact}}",
+    content: "订单发货失败，请尽快处理。\n\n订单号：{{orderNo}}\n商品：{{productName}}\n备注：{{buyerNote}}\n失败原因：{{errorMessage}}\n\n查询地址：{{queryUrl}}\n客服联系方式：{{supportContact}}",
     isEnabled: true,
   },
 };
@@ -154,21 +157,6 @@ function normalizeEmailConfigFromRecord(record: EmailConfigRecord): EmailConfigV
       isEnabled: record.isEnabled,
     } as EmailConfigValue;
   }
-}
-
-function normalizeEmailTemplate(record: EmailTemplateRecord | undefined, scene: EmailScene): EmailTemplateValue {
-  const defaults = defaultTemplates[scene];
-  if (!record) {
-    return defaults;
-  }
-
-  return {
-    scene,
-    name: record.name,
-    subject: record.subject,
-    content: record.content,
-    isEnabled: record.isEnabled,
-  };
 }
 
 function renderTemplate(template: string, values: Record<string, string>) {
@@ -241,7 +229,7 @@ async function getEmailBaseValues(prisma: PrismaClient) {
   return {
     siteName: site.siteName,
     footerText: site.footerText || "",
-    supportContact: site.supportContact ? `客服联系方式：${site.supportContact}` : "",
+    supportContact: site.supportContact || "",
     baseOrigin,
   };
 }
@@ -298,14 +286,14 @@ async function sendSceneEmail(prisma: PrismaClient, input: {
 }) {
   const config = input.config ?? await getActiveEmailConfig(prisma);
   const templates = await listEmailTemplateRecords(prisma);
-  const template = normalizeEmailTemplate(templates.find((item: EmailTemplateRecord) => item.scene === input.scene), input.scene);
+  const templateRecord = templates.find((item: EmailTemplateRecord) => item.scene === input.scene);
 
-  if (!template) {
+  if (!templateRecord) {
     return { skipped: true };
   }
 
-  const subject = renderTemplate(template.subject, input.values);
-  const text = renderTemplate(template.content, input.values);
+  const subject = renderTemplate(templateRecord.subject, input.values);
+  const text = renderTemplate(templateRecord.content, input.values);
   const html = buildHtmlContent(text);
 
   try {
@@ -373,12 +361,19 @@ export async function getEmailManagementData(prisma?: PrismaClient) {
     normalizeEmailConfigFromRecord(record),
   );
 
-  const templates = emailScenes.map((scene) =>
-    normalizeEmailTemplate(
-      templateRecords.find((item: EmailTemplateRecord) => item.scene === scene),
-      scene,
-    ),
-  );
+  const templates = emailScenes
+    .map((scene) => {
+      const record = templateRecords.find((item: EmailTemplateRecord) => item.scene === scene);
+      if (!record) return null;
+      return {
+        scene: record.scene as EmailScene,
+        name: record.name,
+        subject: record.subject,
+        content: record.content,
+        isEnabled: record.isEnabled,
+      };
+    })
+    .filter((t): t is EmailTemplateValue => t !== null);
 
   const statsMap = {
     total: logRecords.length,
@@ -707,7 +702,56 @@ export async function saveEmailTemplate(input: EmailTemplateValue) {
     },
   );
 
-  return normalizeEmailTemplate(record, validated.scene as EmailScene);
+  return {
+    scene: record.scene as EmailScene,
+    name: record.name,
+    subject: record.subject,
+    content: record.content,
+    isEnabled: record.isEnabled,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Public API: reset template to default
+// ---------------------------------------------------------------------------
+
+export async function resetEmailTemplateToDefault(scene: EmailScene) {
+  const adminContext = getAdminContext();
+  const { prisma } = adminContext;
+  const adminId = Number(adminContext.session?.user?.id);
+
+  const defaults = defaultTemplates[scene];
+  if (!defaults) {
+    throw badRequestError("无效的模板场景");
+  }
+
+  const record = await upsertEmailTemplateRecord(prisma, scene, {
+    name: defaults.name,
+    subject: defaults.subject,
+    content: defaults.content,
+    isEnabled: defaults.isEnabled,
+  });
+
+  await logAdminOperation(
+    {
+      action: "RESET_EMAIL_TEMPLATE",
+      targetType: "EmailTemplate",
+      targetId: scene,
+      detail: "恢复默认模板",
+    },
+    {
+      prisma,
+      adminId,
+    },
+  );
+
+  return {
+    scene: record.scene as EmailScene,
+    name: record.name,
+    subject: record.subject,
+    content: record.content,
+    isEnabled: record.isEnabled,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -793,6 +837,7 @@ export async function notifyOrderPaid(input: {
   productName: string;
   amount: number;
   toEmail?: string | null;
+  buyerNote?: string | null;
 }) {
   const prisma = input.prisma ?? getEmailContext().prisma;
   const config = await getActiveEmailConfig(prisma).catch((e) => {
@@ -809,6 +854,7 @@ export async function notifyOrderPaid(input: {
     amount: (input.amount / 100).toFixed(2),
     queryUrl: getQueryUrl(baseValues.baseOrigin, input.orderNo, input.queryToken),
     footerText: baseValues.footerText,
+    buyerNote: input.buyerNote || "无",
   };
 
   const tasks: Promise<any>[] = [];
@@ -855,6 +901,7 @@ export async function notifyDeliverySuccess(input: {
   quantity: number;
   items: string[];
   toEmail?: string | null;
+  buyerNote?: string | null;
 }) {
   const prisma = input.prisma ?? getEmailContext().prisma;
   const config = await getActiveEmailConfig(prisma).catch((e) => {
@@ -869,6 +916,7 @@ export async function notifyDeliverySuccess(input: {
     orderNo: input.orderNo,
     productName: input.productName,
     quantity: String(input.quantity),
+    buyerNote: input.buyerNote || "无",
     deliveryItems: buildDeliveryItems(input.items),
     queryUrl: getQueryUrl(baseValues.baseOrigin, input.orderNo, input.queryToken),
     supportContact: baseValues.supportContact,
@@ -917,6 +965,7 @@ export async function notifyDeliveryFailed(input: {
   productName: string;
   toEmail?: string | null;
   errorMessage: string;
+  buyerNote?: string | null;
 }) {
   const prisma = input.prisma ?? getEmailContext().prisma;
   const config = await getActiveEmailConfig(prisma).catch((e) => {
@@ -930,6 +979,7 @@ export async function notifyDeliveryFailed(input: {
     siteName: baseValues.siteName,
     orderNo: input.orderNo,
     productName: input.productName,
+    buyerNote: input.buyerNote || "无",
     errorMessage: input.errorMessage,
     queryUrl: getQueryUrl(baseValues.baseOrigin, input.orderNo, input.queryToken),
     supportContact: baseValues.supportContact,

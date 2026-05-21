@@ -442,8 +442,22 @@
               <textarea v-model="activeTemplate.content" class="textarea textarea-bordered w-full font-mono text-sm leading-tight" rows="8"></textarea>
             </label>
 
+            <!-- 可用变量提示 -->
+            <div class="border border-base-300 rounded-lg p-4 bg-base-200/50">
+              <div class="flex flex-col gap-3">
+                <div class="text-sm font-medium text-base-content/70">可用变量：</div>
+                <div class="flex flex-wrap gap-2">
+                  <code v-for="variable in getTemplateVariables(activeTemplate.scene)" :key="variable.name" class="px-3 py-1.5 bg-base-100 border border-base-300 rounded text-sm font-mono" :title="variable.description">
+                    <span v-text="'{{' + variable.name + '}}'"></span>
+                    <span class="text-xs text-base-content/60 ml-2">{{ variable.description }}</span>
+                  </code>
+                </div>
+              </div>
+            </div>
+
             <div class="flex items-center gap-3">
               <AppButton variant="primary" :loading="savingTemplate === activeTemplate.scene" @click="handleSaveTemplate(activeTemplate.scene)">保存模板</AppButton>
+              <AppButton variant="outline" :loading="resettingTemplate === activeTemplate.scene" @click="handleResetTemplate(activeTemplate.scene)">恢复默认</AppButton>
               <span v-if="templateMessages[activeTemplate.scene]" class="text-sm" :class="templateErrors[activeTemplate.scene] ? 'text-error' : 'text-success'">
                 {{ templateMessages[activeTemplate.scene] }}
               </span>
@@ -466,9 +480,10 @@ import { normalizeTelefuncError } from "../../../lib/app-error";
 import { reactive, ref, computed, useTemplateRef } from "vue";
 import { useData } from "vike-vue/useData";
 import { onSaveEmailConfig, onDeleteEmailConfig, onSaveEmailPushSettings, onActivateEmailProvider, onClearEmailLogs } from "./saveEmailConfig.telefunc";
-import { onSaveEmailTemplate } from "./saveEmailTemplate.telefunc";
+import { onSaveEmailTemplate, onResetEmailTemplate } from "./saveEmailTemplate.telefunc";
 import { onSendTestEmail } from "./sendTestEmail.telefunc";
 import type { Data } from "./+data";
+import { EMAIL_TEMPLATE_VARIABLES, type EmailScene } from "../../../modules/email/types";
 
 type MailboxItem = {
   id?: number;
@@ -557,7 +572,8 @@ const activeTemplate = computed(() => {
   return templateList.find((t: any) => t.scene === activeTemplateScene.value) || templateList[0];
 });
 const savingTemplate = ref<"TEST" | "ORDER_PAID" | "DELIVERY_SUCCESS" | "DELIVERY_FAILED" | "">("");
-const templateMessages = reactive<Record<string, string>>({ TEST: "", ORDER_PAID: "", DELIVERY_SUCCESS: "", DELIVERY_FAILED: "" });
+const resettingTemplate = ref<"TEST" | "ORDER_PAID" | "DELIVERY_SUCCESS" | "DELIVERY_FAILED" | "">("");
+const templateMessages = reactive<Record<string, string>>({ TEST: "", ORDER_PAID: "", DELIVERY_SUCCESS: "", DELIVERY_FAILED: "", });
 const templateErrors = reactive<Record<string, boolean>>({ TEST: false, ORDER_PAID: false, DELIVERY_SUCCESS: false, DELIVERY_FAILED: false });
 
 // ===================== Config dialog =====================
@@ -727,6 +743,10 @@ function getSceneLabel(scene: string) {
   return ({ TEST: "测试邮件", ORDER_PAID: "支付成功", DELIVERY_SUCCESS: "发货成功", DELIVERY_FAILED: "发货失败" } as Record<string, string>)[scene] || scene;
 }
 
+function getTemplateVariables(scene: EmailScene) {
+  return EMAIL_TEMPLATE_VARIABLES[scene] || [];
+}
+
 function getChannelLabel(provider: string) {
   return ({ API: "API", SMTP: "SMTP", CLOUDFLARE: "CloudFlare" } as Record<string, string>)[provider] || provider;
 }
@@ -888,6 +908,40 @@ async function handleSaveTemplate(scene: "TEST" | "ORDER_PAID" | "DELIVERY_SUCCE
     templateMessages[scene] = normalizeTelefuncError(error, "保存失败");
   } finally {
     savingTemplate.value = "";
+  }
+}
+
+async function handleResetTemplate(scene: EmailScene) {
+  const confirmed = await confirmRef.value?.confirm({
+    title: "恢复默认模板",
+    message: "确定要恢复为默认模板吗？\n\n当前的自定义内容将被覆盖，立即生效。",
+    confirmText: "确定恢复",
+    cancelText: "取消",
+    danger: true,
+  });
+
+  if (!confirmed) return;
+
+  resettingTemplate.value = scene;
+  templateMessages[scene] = "";
+  templateErrors[scene] = false;
+
+  try {
+    const result = await onResetEmailTemplate(scene);
+    const target = templateList.find((item: any) => item.scene === scene);
+    if (target) {
+      Object.assign(target, result);
+    }
+    templateMessages[scene] = "已恢复为默认模板（已保存）";
+    // 3秒后清空消息
+    setTimeout(() => {
+      templateMessages[scene] = "";
+    }, 3000);
+  } catch (error) {
+    templateErrors[scene] = true;
+    templateMessages[scene] = normalizeTelefuncError(error, "恢复失败");
+  } finally {
+    resettingTemplate.value = "";
   }
 }
 </script>

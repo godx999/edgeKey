@@ -14,6 +14,8 @@ VALUES (1, 'EK发卡商城', 'Cloudflare Workers 免费部署自动发卡商城'
 ON CONFLICT("id") DO NOTHING;
 
 -- 邮件模板
+-- 注意：此处的模板内容需要与 modules/email/service.ts 中的 defaultTemplates 保持一致
+-- 用途：首次部署时初始化数据库中的邮件模板
 INSERT INTO "EmailTemplate" ("scene", "name", "subject", "content", "isEnabled", "updatedAt")
 VALUES
   ('TEST', '测试邮件', '[{{siteName}}] 测试邮件', '这是一封测试邮件。
@@ -27,6 +29,7 @@ VALUES
 订单号：{{orderNo}}
 商品：{{productName}}
 金额：{{amount}}
+备注：{{buyerNote}}
 查询地址：{{queryUrl}}
 
 {{footerText}}', true, CURRENT_TIMESTAMP),
@@ -35,17 +38,19 @@ VALUES
 订单号：{{orderNo}}
 商品：{{productName}}
 数量：{{quantity}}
+备注：{{buyerNote}}
 发货内容：
 {{deliveryItems}}
 
 查询地址：{{queryUrl}}
-{{supportContact}}', true, CURRENT_TIMESTAMP),
+客服联系方式：{{supportContact}}', true, CURRENT_TIMESTAMP),
   ('DELIVERY_FAILED', '发货失败通知', '[{{siteName}}] 订单 {{orderNo}} 发货失败', '订单发货失败，请尽快处理。
 
 订单号：{{orderNo}}
 商品：{{productName}}
+备注：{{buyerNote}}
 失败原因：{{errorMessage}}
 
 查询地址：{{queryUrl}}
-{{supportContact}}', true, CURRENT_TIMESTAMP)
+客服联系方式：{{supportContact}}', true, CURRENT_TIMESTAMP)
 ON CONFLICT("scene") DO NOTHING;
