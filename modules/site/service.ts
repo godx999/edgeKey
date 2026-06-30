@@ -15,6 +15,8 @@ const defaultSiteSetting = {
   supportContact: null,
   footerText: null,
   orderNotice: null,
+  headCode: null,
+  footerCode: null,
 };
 
 function normalizeSetting(record: Awaited<ReturnType<typeof getSiteSettingRecord>>) {
@@ -32,6 +34,8 @@ function normalizeSetting(record: Awaited<ReturnType<typeof getSiteSettingRecord
     supportContact: record.supportContact,
     footerText: record.footerText,
     orderNotice: record.orderNotice,
+    headCode: record.headCode,
+    footerCode: record.footerCode,
   };
 }
 
@@ -61,6 +65,8 @@ export async function saveSiteSetting(input: SiteSettingInput) {
     supportContact: input.supportContact?.trim() || null,
     footerText: input.footerText?.trim() || null,
     orderNotice: input.orderNotice?.trim() || null,
+    headCode: input.headCode ?? null,
+    footerCode: input.footerCode ?? null,
   });
 
   await logAdminOperation(

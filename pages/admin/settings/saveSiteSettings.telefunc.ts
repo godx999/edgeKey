@@ -11,6 +11,8 @@ export async function onSaveSiteSettings(input: {
   supportContact?: string;
   footerText?: string;
   orderNotice?: string;
+  headCode?: string;
+  footerCode?: string;
 }) {
   assertAdminAccess();
   return saveSiteSetting(input);

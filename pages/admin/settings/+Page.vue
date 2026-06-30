@@ -66,6 +66,23 @@
         <textarea v-model="form.orderNotice" class="textarea textarea-bordered w-full" rows="4"></textarea>
       </label>
 
+      <div class="divider">自定义代码</div>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="flex flex-col gap-1.5">
+          <span class="label-text font-medium">页头代码 (head)</span>
+          <textarea v-model="form.headCode" class="textarea textarea-bordered w-full font-mono text-sm" rows="6" placeholder="&lt;meta name=&quot;...&quot; content=&quot;...&quot;&gt;
+&lt;script&gt;...&lt;/script&gt;"></textarea>
+          <span class="text-xs text-base-content/50">注入到 &lt;head&gt; 标签内，可用于添加统计代码、Meta 标签等</span>
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="label-text font-medium">页脚代码 (body)</span>
+          <textarea v-model="form.footerCode" class="textarea textarea-bordered w-full font-mono text-sm" rows="6" placeholder="&lt;script&gt;...&lt;/script&gt;
+&lt;div&gt;...&lt;/div&gt;"></textarea>
+          <span class="text-xs text-base-content/50">注入到 &lt;/body&gt; 标签前，可用于添加客服插件、JS 脚本等</span>
+        </label>
+      </div>
+
       <div class="flex items-center gap-3">
         <AppButton variant="primary" :loading="saving" @click="handleSave">保存设置</AppButton>
         <span v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</span>
@@ -103,6 +120,8 @@ const form = reactive({
   supportContact: site.supportContact ?? "",
   footerText: site.footerText ?? "",
   orderNotice: site.orderNotice ?? "",
+  headCode: site.headCode ?? "",
+  footerCode: site.footerCode ?? "",
 });
 
 const saving = ref(false);
@@ -128,6 +147,8 @@ async function handleSave() {
     form.supportContact = result.supportContact ?? "";
     form.footerText = result.footerText ?? "";
     form.orderNotice = result.orderNotice ?? "";
+    form.headCode = result.headCode ?? "";
+    form.footerCode = result.footerCode ?? "";
     saved.value = true;
   } catch (error) {
     errorMessage.value = normalizeTelefuncError(error, "保存失败");

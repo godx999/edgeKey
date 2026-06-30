@@ -1,5 +1,15 @@
 # Change Log
 
+## v1.4.7 (2026-06-30)
+
+### Features
+
+- **site:** 新增页头/页脚自定义代码注入功能，支持在后台添加统计 JS、Meta 标签、客服插件等自定义代码
+
+### Bug Fixes
+
+- **payment:** 修复 TypeScript 类型错误
+
 ## v1.4.6 (2026-06-21)
 
 ### Features
